@@ -239,6 +239,175 @@
         la temperatura actual de la estación que elijas.
       </p>
     </section>
+    
+<section class="info" id="stations-panel">
+  <h2 class="section-title" style="margin-top:0">📍 Mis estaciones</h2>
+
+  <label for="station-name">Nombre de la estación</label>
+  <input
+    id="station-name"
+    type="text"
+    placeholder="Ej.: Estación de mi pueblo"
+    style="display:block;width:100%;padding:12px;margin:8px 0 14px;border-radius:10px;border:1px solid #29364c;background:#0b1220;color:#f3f6fc"
+  >
+
+  <label for="station-id">ID de Weathercloud</label>
+  <input
+    id="station-id"
+    type="text"
+    placeholder="Ej.: 5726468552"
+    style="display:block;width:100%;padding:12px;margin:8px 0 14px;border-radius:10px;border:1px solid #29364c;background:#0b1220;color:#f3f6fc"
+  >
+
+  <button
+    id="save-station"
+    type="button"
+    style="padding:12px 16px;border:0;border-radius:12px;background:#75c7ff;color:#0b1220;font-weight:700;cursor:pointer"
+  >
+    + Guardar estación
+  </button>
+
+  <p id="station-message" role="status"></p>
+
+  <label for="station-select">Estación seleccionada</label>
+  <select
+    id="station-select"
+    style="display:block;width:100%;padding:12px;margin-top:8px;border-radius:10px;background:#0b1220;color:#f3f6fc;border:1px solid #29364c"
+  >
+    <option value="">Todavía no hay estaciones guardadas</option>
+  </select>
+
+  <div id="station-list" style="margin-top:14px"></div>
+</section>
+
+<script>
+(() => {
+  const STORAGE_KEY = "weathercloud-stations-v1";
+
+  const nameInput = document.getElementById("station-name");
+  const idInput = document.getElementById("station-id");
+  const saveButton = document.getElementById("save-station");
+  const select = document.getElementById("station-select");
+  const list = document.getElementById("station-list");
+  const message = document.getElementById("station-message");
+
+  let stations = [];
+  let selectedId = "";
+
+  try {
+    stations = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    if (!Array.isArray(stations)) stations = [];
+    selectedId = localStorage.getItem("weathercloud-selected-station") || "";
+  } catch {
+    stations = [];
+  }
+
+  function saveToStorage() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(stations));
+    localStorage.setItem("weathercloud-selected-station", selectedId);
+  }
+
+  function render() {
+    select.replaceChildren();
+    list.replaceChildren();
+
+    if (stations.length === 0) {
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = "Todavía no hay estaciones guardadas";
+      select.appendChild(option);
+      return;
+    }
+
+    stations.forEach(station => {
+      const option = document.createElement("option");
+      option.value = station.id;
+      option.textContent = station.name;
+      select.appendChild(option);
+
+      const item = document.createElement("div");
+      item.style.cssText =
+        "padding:12px;margin-top:8px;border:1px solid #29364c;border-radius:12px";
+
+      const title = document.createElement("strong");
+      title.textContent = station.name;
+
+      const details = document.createElement("div");
+      details.textContent = "ID: " + station.id;
+      details.style.color = "#a2afc5";
+      details.style.margin = "5px 0 10px";
+
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.textContent = "Eliminar";
+      remove.style.cssText =
+        "padding:8px 12px;border:1px solid #52627a;border-radius:9px;background:transparent;color:#f3f6fc;cursor:pointer";
+
+      remove.addEventListener("click", () => {
+        stations = stations.filter(s => s.id !== station.id);
+        if (selectedId === station.id) {
+          selectedId = stations[0]?.id || "";
+        }
+        saveToStorage();
+        render();
+        message.textContent = "Estación eliminada.";
+      });
+
+      item.append(title, details, remove);
+      list.appendChild(item);
+    });
+
+    select.value = selectedId;
+    if (!select.value) {
+      selectedId = stations[0].id;
+      select.value = selectedId;
+      saveToStorage();
+    }
+  }
+
+  saveButton.addEventListener("click", () => {
+    const name = nameInput.value.trim();
+    const id = idInput.value.trim();
+
+    if (!name || !id) {
+      message.textContent = "Introduce el nombre y el ID de la estación.";
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
+      message.textContent = "El ID contiene caracteres no admitidos.";
+      return;
+    }
+
+    const existing = stations.find(s => s.id === id);
+
+    if (existing) {
+      existing.name = name;
+      message.textContent = "Nombre de la estación actualizado.";
+    } else {
+      stations.push({ name, id });
+      message.textContent = "Estación guardada correctamente.";
+    }
+
+    selectedId = id;
+    saveToStorage();
+    render();
+    select.value = selectedId;
+
+    nameInput.value = "";
+    idInput.value = "";
+  });
+
+  select.addEventListener("change", () => {
+    selectedId = select.value;
+    saveToStorage();
+    message.textContent = "Estación seleccionada: " +
+      (stations.find(s => s.id === selectedId)?.name || "");
+  });
+
+  render();
+})();
+</script>
 
     <h2 class="section-title">Condiciones actuales</h2>
 
