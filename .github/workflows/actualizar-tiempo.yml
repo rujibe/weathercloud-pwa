@@ -2,7 +2,6 @@ name: Actualizar datos de Weathercloud
 
 on:
   schedule:
-    - cron: "7,17,27,37,47,57 * * * *"
     - cron: "13 3 * * *"
   workflow_dispatch:
   push:
@@ -13,7 +12,7 @@ permissions:
 
 concurrency:
   group: publicar-web
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -48,7 +47,7 @@ jobs:
       - name: Preparar los archivos de la web
         run: |
           mkdir _site
-          cp -r index.html weather.json manifest.webmanifest sw.js icons _site/
+          cp -r index.html api-config.js stations.json weather.json manifest.webmanifest sw.js icons _site/
           if [ -f history.json ]; then cp history.json _site/; fi
           touch _site/.nojekyll
       - name: Preparar publicación de GitHub Pages
