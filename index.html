@@ -282,11 +282,9 @@
   <div id="station-list" style="margin-top:14px"></div>
 </section>
 
-<script src="./api-config.js"></script>
 <script>
 (() => {
   const STORAGE_KEY = "weathercloud-stations-v1";
-  const API_BASE_URL = (window.WEATHERCLOUD_API_BASE_URL || "").replace(/\/$/, "");
 
   const nameInput = document.getElementById("station-name");
   const idInput = document.getElementById("station-id");
@@ -392,19 +390,17 @@
     if (!station) return;
     selectedName.textContent = station.name;
 
-    if (!API_BASE_URL) {
-      weatherStatus.textContent = "La estación está guardada. Falta publicar el servicio de datos para ver sus lecturas.";
-      return;
-    }
-
     weatherStatus.textContent = "Consultando la estación…";
     refreshButton.disabled = true;
     try {
-      const response = await fetch(`${API_BASE_URL}/api/current?station_id=${encodeURIComponent(station.id)}`);
+      const response = await fetch(`./weather.json?refresh=${Date.now()}`, { cache: "no-store" });
+      if (!response.ok) throw new Error("Todavía no hay datos publicados. Espera a que termine la primera actualización de GitHub.");
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "No se pudieron consultar los datos.");
+      const stationData = result.stations?.[station.id];
+      if (!stationData) throw new Error("Esta estación no está incluida en la actualización automática. De momento está configurada la estación 3102580268.");
+      if (stationData.error) throw new Error(stationData.error);
 
-      const readings = result.readings;
+      const readings = stationData.readings;
       showValue("temperature-value", readings.temp, "", 1);
       showValue("humidity-value", readings.hum, " %", 0);
       showValue("wind-value", readings.wspd === null ? null : readings.wspd * 3.6, " km/h", 1);
@@ -416,7 +412,8 @@
       const updatedAt = readings.epoch
         ? new Date(readings.epoch * 1000).toLocaleString("es-ES")
         : "hora no disponible";
-      weatherStatus.textContent = `Última lectura: ${updatedAt}.`;
+      const publishedAt = result.updated_at ? new Date(result.updated_at).toLocaleString("es-ES") : "hora no disponible";
+      weatherStatus.textContent = `Última lectura: ${updatedAt}. Datos publicados: ${publishedAt}.`;
     } catch (error) {
       weatherStatus.textContent = error.message || "No se pudo conectar con el servicio de datos.";
     } finally {
@@ -517,7 +514,7 @@
     <section class="info">
       <strong>Lecturas de tu estación</strong>
       <br>
-      La información se actualiza al seleccionar una estación y, mientras la web está abierta, cada diez minutos.
+      GitHub publica nuevas lecturas aproximadamente cada diez minutos. El botón vuelve a consultar los últimos datos publicados.
     </section>
 
     <footer>

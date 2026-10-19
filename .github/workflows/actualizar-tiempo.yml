@@ -1,0 +1,58 @@
+name: Actualizar datos de Weathercloud
+
+on:
+  schedule:
+    - cron: "7,17,27,37,47,57 * * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publicar-web
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read
+    steps:
+      - name: Descargar el proyecto
+        uses: actions/checkout@v4
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Instalar la conexión con Weathercloud
+        run: pip install -r requirements.txt
+      - name: Obtener los datos de las estaciones
+        run: python fetch_weather.py
+      - name: Preparar los archivos de la web
+        run: |
+          mkdir _site
+          cp index.html weather.json _site/
+          touch _site/.nojekyll
+      - name: Preparar publicación de GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Guardar la web lista para publicar
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publicar en GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
