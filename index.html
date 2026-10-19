@@ -232,12 +232,14 @@
 
     <section class="main-card">
       <div class="eyebrow">ESTACIÓN SELECCIONADA</div>
-      <div class="station-name">Mi estación meteorológica</div>
-      <div class="temperature">--<span>°C</span></div>
-      <p class="placeholder">
-        Cuando conectemos Weathercloud, aquí aparecerá
-        la temperatura actual de la estación que elijas.
+      <div class="station-name" id="selected-station-name">Mi estación meteorológica</div>
+      <div class="temperature"><span id="temperature-value">--</span><span>°C</span></div>
+      <p class="placeholder" id="weather-status" role="status" aria-live="polite">
+        Los datos de la estación aparecerán aquí cuando el servicio esté conectado.
       </p>
+      <button id="refresh-weather" type="button" style="padding:10px 14px;border:1px solid #91cfff;border-radius:12px;background:#ffffff18;color:#fff;font-weight:700;cursor:pointer">
+        ↻ Actualizar ahora
+      </button>
     </section>
     
 <section class="info" id="stations-panel">
@@ -255,7 +257,7 @@
   <input
     id="station-id"
     type="text"
-    placeholder="Ej.: 5726468552"
+    placeholder="Ej.: 3102580268"
     style="display:block;width:100%;padding:12px;margin:8px 0 14px;border-radius:10px;border:1px solid #29364c;background:#0b1220;color:#f3f6fc"
   >
 
@@ -280,9 +282,11 @@
   <div id="station-list" style="margin-top:14px"></div>
 </section>
 
+<script src="./api-config.js"></script>
 <script>
 (() => {
   const STORAGE_KEY = "weathercloud-stations-v1";
+  const API_BASE_URL = (window.WEATHERCLOUD_API_BASE_URL || "").replace(/\/$/, "");
 
   const nameInput = document.getElementById("station-name");
   const idInput = document.getElementById("station-id");
@@ -290,6 +294,9 @@
   const select = document.getElementById("station-select");
   const list = document.getElementById("station-list");
   const message = document.getElementById("station-message");
+  const selectedName = document.getElementById("selected-station-name");
+  const weatherStatus = document.getElementById("weather-status");
+  const refreshButton = document.getElementById("refresh-weather");
 
   let stations = [];
   let selectedId = "";
@@ -300,6 +307,12 @@
     selectedId = localStorage.getItem("weathercloud-selected-station") || "";
   } catch {
     stations = [];
+  }
+
+  if (stations.length === 0) {
+    stations = [{ name: "Mi estación", id: "3102580268" }];
+    selectedId = "3102580268";
+    saveToStorage();
   }
 
   function saveToStorage() {
@@ -350,6 +363,7 @@
         }
         saveToStorage();
         render();
+        refreshWeather();
         message.textContent = "Estación eliminada.";
       });
 
@@ -363,6 +377,51 @@
       select.value = selectedId;
       saveToStorage();
     }
+    selectedName.textContent = stations.find(s => s.id === selectedId)?.name || "Mi estación";
+  }
+
+  function showValue(id, value, suffix = "", digits = 1) {
+    const element = document.getElementById(id);
+    element.textContent = value === null || value === undefined || value === ""
+      ? "—"
+      : `${Number(value).toFixed(digits)}${suffix}`;
+  }
+
+  async function refreshWeather() {
+    const station = stations.find(s => s.id === selectedId);
+    if (!station) return;
+    selectedName.textContent = station.name;
+
+    if (!API_BASE_URL) {
+      weatherStatus.textContent = "La estación está guardada. Falta publicar el servicio de datos para ver sus lecturas.";
+      return;
+    }
+
+    weatherStatus.textContent = "Consultando la estación…";
+    refreshButton.disabled = true;
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/current?station_id=${encodeURIComponent(station.id)}`);
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "No se pudieron consultar los datos.");
+
+      const readings = result.readings;
+      showValue("temperature-value", readings.temp, "", 1);
+      showValue("humidity-value", readings.hum, " %", 0);
+      showValue("wind-value", readings.wspd === null ? null : readings.wspd * 3.6, " km/h", 1);
+      showValue("pressure-value", readings.bar, " hPa", 1);
+      showValue("rain-value", readings.rain, " mm", 1);
+      showValue("uv-value", readings.uvi, "", 0);
+      showValue("dew-value", readings.dew, " °C", 1);
+
+      const updatedAt = readings.epoch
+        ? new Date(readings.epoch * 1000).toLocaleString("es-ES")
+        : "hora no disponible";
+      weatherStatus.textContent = `Última lectura: ${updatedAt}.`;
+    } catch (error) {
+      weatherStatus.textContent = error.message || "No se pudo conectar con el servicio de datos.";
+    } finally {
+      refreshButton.disabled = false;
+    }
   }
 
   saveButton.addEventListener("click", () => {
@@ -374,7 +433,7 @@
       return;
     }
 
-    if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
+    if (!/^\d{1,20}$/.test(id)) {
       message.textContent = "El ID contiene caracteres no admitidos.";
       return;
     }
@@ -393,6 +452,7 @@
     saveToStorage();
     render();
     select.value = selectedId;
+    refreshWeather();
 
     nameInput.value = "";
     idInput.value = "";
@@ -403,9 +463,14 @@
     saveToStorage();
     message.textContent = "Estación seleccionada: " +
       (stations.find(s => s.id === selectedId)?.name || "");
+    refreshWeather();
   });
 
+  refreshButton.addEventListener("click", refreshWeather);
+
   render();
+  refreshWeather();
+  window.setInterval(refreshWeather, 10 * 60 * 1000);
 })();
 </script>
 
@@ -415,46 +480,44 @@
       <article class="metric">
         <div class="metric-icon">💧</div>
         <div class="metric-label">Humedad</div>
-        <div class="metric-value">-- %</div>
+        <div class="metric-value" id="humidity-value">-- %</div>
       </article>
 
       <article class="metric">
         <div class="metric-icon">🌬️</div>
         <div class="metric-label">Viento</div>
-        <div class="metric-value">-- km/h</div>
+        <div class="metric-value" id="wind-value">-- km/h</div>
       </article>
 
       <article class="metric">
         <div class="metric-icon">🧭</div>
         <div class="metric-label">Presión</div>
-        <div class="metric-value">-- hPa</div>
+        <div class="metric-value" id="pressure-value">-- hPa</div>
       </article>
 
       <article class="metric">
         <div class="metric-icon">🌧️</div>
         <div class="metric-label">Lluvia</div>
-        <div class="metric-value">-- mm</div>
+        <div class="metric-value" id="rain-value">-- mm</div>
       </article>
 
       <article class="metric">
         <div class="metric-icon">☀️</div>
         <div class="metric-label">Índice UV</div>
-        <div class="metric-value">--</div>
+        <div class="metric-value" id="uv-value">--</div>
       </article>
 
       <article class="metric">
         <div class="metric-icon">🌡️</div>
         <div class="metric-label">Punto de rocío</div>
-        <div class="metric-value">-- °C</div>
+        <div class="metric-value" id="dew-value">-- °C</div>
       </article>
     </section>
 
     <section class="info">
-      <strong>Próximamente: tus estaciones e históricos</strong>
+      <strong>Lecturas de tu estación</strong>
       <br>
-      En los siguientes pasos añadiremos la posibilidad de guardar
-      estaciones públicas, seleccionarlas y consultar sus registros
-      históricos mediante gráficas.
+      La información se actualiza al seleccionar una estación y, mientras la web está abierta, cada diez minutos.
     </section>
 
     <footer>

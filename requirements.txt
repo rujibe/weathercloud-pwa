@@ -1,0 +1,1 @@
+weathercloud @ git+https://github.com/MauroDruwel/weathercloud.git
