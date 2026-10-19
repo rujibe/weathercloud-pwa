@@ -1,525 +1,65 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b1220">
-  <meta name="description" content="Tu panel meteorológico personal de Weathercloud">
-  <title>Weathercloud | Mi estación</title>
-
+  <meta name="theme-color" content="#07111f">
+  <meta name="description" content="Panel personal de tu estación meteorológica Weathercloud">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <title>Weathercloud · Mi estación</title>
   <style>
-    :root {
-      --bg: #0b1220;
-      --panel: #151f32;
-      --text: #f3f6fc;
-      --muted: #a2afc5;
-      --accent: #75c7ff;
-      --border: #29364c;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      padding: 22px 16px 40px;
-      background:
-        radial-gradient(ellipse at top right, #19365a, transparent 55%),
-        var(--bg);
-      color: var(--text);
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    }
-
-    .app {
-      max-width: 720px;
-      margin: 0 auto;
-    }
-
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 26px;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .logo {
-      display: grid;
-      place-items: center;
-      width: 48px;
-      height: 48px;
-      border-radius: 16px;
-      background: linear-gradient(135deg, #75d5ff, #7285ff);
-      font-size: 27px;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: 21px;
-    }
-
-    .subtitle {
-      margin-top: 4px;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .settings-button {
-      width: 44px;
-      height: 44px;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      background: var(--panel);
-      color: var(--text);
-      font-size: 21px;
-      cursor: pointer;
-    }
-
-    .welcome {
-      margin-bottom: 22px;
-    }
-
-    .welcome h2 {
-      margin: 0 0 8px;
-      font-size: 27px;
-      letter-spacing: -0.7px;
-    }
-
-    .welcome p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.6;
-      font-size: 14px;
-    }
-
-    .main-card {
-      padding: 23px;
-      border: 1px solid #354b69;
-      border-radius: 25px;
-      background: linear-gradient(145deg, #1b4268, #20294d);
-    }
-
-    .eyebrow {
-      font-size: 11px;
-      letter-spacing: 1.5px;
-      color: #c2e6ff;
-    }
-
-    .station-name {
-      margin-top: 10px;
-      font-size: 23px;
-      font-weight: 750;
-    }
-
-    .temperature {
-      margin-top: 22px;
-      font-size: 67px;
-      font-weight: 300;
-      letter-spacing: -4px;
-    }
-
-    .temperature span {
-      font-size: 30px;
-      vertical-align: top;
-    }
-
-    .placeholder {
-      color: #d5e4f7;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
-    .section-title {
-      margin: 27px 0 14px;
-      font-size: 17px;
-    }
-
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .metric {
-      min-height: 122px;
-      padding: 16px;
-      border: 1px solid var(--border);
-      border-radius: 19px;
-      background: var(--panel);
-    }
-
-    .metric-icon {
-      font-size: 22px;
-    }
-
-    .metric-label {
-      margin-top: 12px;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .metric-value {
-      margin-top: 6px;
-      font-size: 23px;
-      font-weight: 700;
-    }
-
-    .info {
-      margin-top: 22px;
-      padding: 17px;
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      background: var(--panel);
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.7;
-    }
-
-    footer {
-      padding-top: 25px;
-      color: var(--muted);
-      text-align: center;
-      font-size: 11px;
-    }
-
-    @media (min-width: 540px) {
-      .cards {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
-
-      .main-card {
-        padding: 30px;
-      }
-    }
+    :root{color-scheme:dark;--bg:#07111f;--panel:#101d2e;--panel2:#14243a;--line:#263a52;--text:#f2f7fc;--muted:#9cb0c6;--blue:#77d5ff;--mint:#8ee6cf;--gold:#ffd27b;--radius:22px}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 75% -10%,#204467 0,transparent 40%),radial-gradient(ellipse at 5% 30%,#173253 0,transparent 28%),var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+    button,select,input{font:inherit}.page{width:min(1100px,100% - 32px);margin:auto;padding:24px 0 40px}.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:26px}.brand{display:flex;align-items:center;gap:12px}.brand-mark{width:46px;height:46px;display:grid;place-items:center;border-radius:16px;background:linear-gradient(145deg,#9ae7ff,#7ba6ff);box-shadow:0 8px 30px #51bff540;font-size:24px}.brand h1{font-size:17px;margin:0;letter-spacing:.2px}.brand p{margin:3px 0 0;color:var(--muted);font-size:12px}.top-actions{display:flex;gap:9px}.pill-button,.select-control,.text-control{border:1px solid var(--line);background:#0c1929;color:var(--text);border-radius:13px;padding:10px 13px}.pill-button{cursor:pointer}.pill-button:hover{border-color:#72cfff}.intro{display:flex;align-items:end;justify-content:space-between;gap:18px;margin:18px 0 20px}.intro h2{font-size:clamp(24px,5vw,34px);letter-spacing:-1px;margin:0 0 7px}.intro p{color:var(--muted);margin:0;line-height:1.55}.live-tag{display:flex;align-items:center;gap:8px;color:#b9f6dc;font-size:12px;white-space:nowrap}.dot{width:8px;height:8px;border-radius:50%;background:#65e0ae;box-shadow:0 0 12px #65e0ae}.hero{position:relative;overflow:hidden;display:grid;grid-template-columns:1.1fr .9fr;gap:24px;padding:clamp(22px,4vw,36px);border:1px solid #3b6485;border-radius:28px;background:linear-gradient(122deg,#17466b 0%,#183650 48%,#24375c 100%);box-shadow:0 20px 60px #02091355}.hero:after{content:"";position:absolute;width:300px;height:300px;right:-90px;top:-125px;border-radius:50%;background:#9be4ff14;filter:blur(1px)}.hero-main,.hero-side{position:relative;z-index:1}.eyebrow{color:#c1eaff;font-size:11px;font-weight:700;letter-spacing:1.7px;text-transform:uppercase}.station-title{margin:10px 0 0;font-size:23px}.temp-line{display:flex;align-items:flex-start;gap:7px;margin:13px 0 0}.temp{font-size:clamp(76px,15vw,116px);font-weight:300;line-height:.95;letter-spacing:-8px}.degrees{padding-top:11px;font-size:34px;font-weight:300}.weather-note{color:#d5e8f4;font-size:14px;margin:12px 0 19px}.hero-buttons{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.primary-button{border:0;border-radius:13px;background:#c4f0ff;color:#10283b;padding:11px 15px;font-weight:750;cursor:pointer}.primary-button:disabled{opacity:.6;cursor:wait}.subtle{color:#d8eaff;font-size:12px}.hero-side{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:center}.hero-stat{padding:14px;border-radius:17px;border:1px solid #ffffff20;background:#071a2c35;backdrop-filter:blur(8px)}.hero-stat span{display:block;color:#c3d8e8;font-size:12px}.hero-stat strong{display:block;font-size:20px;margin-top:7px}.section-head{display:flex;justify-content:space-between;align-items:end;gap:12px;margin:27px 0 13px}.section-head h3{font-size:17px;margin:0}.section-head p{margin:5px 0 0;color:var(--muted);font-size:12px}.metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}.metric{min-height:112px;padding:15px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(145deg,#122137,#0e1a2a)}.metric-top{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px}.metric-icon{font-size:20px}.metric-value{font-size:22px;font-weight:700;margin-top:12px;letter-spacing:-.5px}.metric-note{color:var(--muted);font-size:11px;margin-top:4px}.history-panel{padding:19px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(145deg,#111f31,#0d1929)}.history-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.history-selects{display:flex;gap:8px}.select-control{padding:9px 12px}.chart-wrap{position:relative;margin-top:18px;height:250px}.chart-wrap canvas{display:block;width:100%;height:100%}.chart-empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:20px;color:var(--muted);font-size:13px;line-height:1.6}.history-summary{display:flex;gap:20px;flex-wrap:wrap;margin-top:8px;color:var(--muted);font-size:12px}.history-summary strong{color:var(--text);margin-left:4px}.station-panel{margin-top:18px;padding:18px;border:1px solid var(--line);border-radius:20px;background:#0e1a2a}.station-panel summary{font-weight:700;cursor:pointer}.station-form{display:grid;grid-template-columns:1fr 1fr auto;gap:9px;margin-top:15px}.text-control{min-width:0}.station-help{color:var(--muted);font-size:12px;line-height:1.5}.station-list{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.station-chip{border:1px solid var(--line);border-radius:999px;padding:7px 11px;color:var(--muted);font-size:12px}.station-chip button{border:0;background:none;color:#ffb6a6;cursor:pointer;margin-left:7px}.footer{text-align:center;color:#71859b;font-size:11px;padding:25px 0 0}.error{color:#ffd0c7}.hidden{display:none!important}
+    @media(max-width:760px){.metric-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.hero{grid-template-columns:1fr}.hero-side{grid-template-columns:repeat(4,1fr)}}
+    @media(max-width:540px){.page{width:min(100% - 22px,1100px);padding-top:15px}.topbar{margin-bottom:20px}.intro{align-items:start;flex-direction:column;margin:14px 0}.hero{gap:16px;padding:20px;border-radius:23px}.hero-side{grid-template-columns:repeat(2,1fr)}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.metric{min-height:104px;padding:13px}.metric-value{font-size:20px}.section-head{align-items:start;flex-direction:column}.station-form{grid-template-columns:1fr}.chart-wrap{height:220px}.top-actions .install-label{display:none}}
+    @media(prefers-reduced-motion:no-preference){.dot{animation:pulse 2.3s infinite}@keyframes pulse{50%{box-shadow:0 0 4px #65e0ae;opacity:.65}}}
   </style>
 </head>
-
 <body>
-  <main class="app">
-    <header>
-      <div class="brand">
-        <div class="logo" aria-hidden="true">☀️</div>
-        <div>
-          <h1>Weathercloud</h1>
-          <div class="subtitle">Tu tiempo, a tu manera</div>
-        </div>
-      </div>
-
-      <button class="settings-button"
-              type="button"
-              aria-label="Configuración"
-              title="Configuración">
-        ⚙
-      </button>
+  <main class="page">
+    <header class="topbar">
+      <div class="brand"><div class="brand-mark" aria-hidden="true">☀</div><div><h1>Weathercloud</h1><p>Tu estación, en un vistazo</p></div></div>
+      <div class="top-actions"><button id="install-button" class="pill-button hidden" type="button">＋ <span class="install-label">Instalar app</span></button><button id="settings-button" class="pill-button" type="button" aria-label="Mis estaciones">⚙</button></div>
     </header>
-
-    <section class="welcome">
-      <h2>Hola, bienvenido 👋</h2>
-      <p>
-        Consulta tus estaciones meteorológicas favoritas
-        y descubre cómo evoluciona el tiempo.
-      </p>
+    <section class="intro"><div><h2>El tiempo en tu estación</h2><p>Condiciones actuales y evolución meteorológica.</p></div><div class="live-tag"><span class="dot"></span><span id="connection-label">Estación preparada</span></div></section>
+    <section class="hero" aria-label="Resumen meteorológico">
+      <div class="hero-main"><div class="eyebrow">AHORA EN</div><div class="station-title" id="selected-station-name">Mi estación</div><div class="temp-line"><span class="temp" id="temperature-value">--</span><span class="degrees">°C</span></div><p class="weather-note" id="weather-status" role="status" aria-live="polite">Cargando datos de tu estación…</p><div class="hero-buttons"><button id="refresh-weather" class="primary-button" type="button">↻ Actualizar</button><span class="subtle" id="reading-time">Esperando lectura…</span></div></div>
+      <div class="hero-side"><div class="hero-stat"><span>Sensación térmica</span><strong id="feels-value">—</strong></div><div class="hero-stat"><span>Máxima (24 h)</span><strong id="max-value">—</strong></div><div class="hero-stat"><span>Mínima (24 h)</span><strong id="min-value">—</strong></div><div class="hero-stat"><span>Estación</span><strong id="station-state">—</strong></div></div>
     </section>
-
-    <section class="main-card">
-      <div class="eyebrow">ESTACIÓN SELECCIONADA</div>
-      <div class="station-name" id="selected-station-name">Mi estación meteorológica</div>
-      <div class="temperature"><span id="temperature-value">--</span><span>°C</span></div>
-      <p class="placeholder" id="weather-status" role="status" aria-live="polite">
-        Los datos de la estación aparecerán aquí cuando el servicio esté conectado.
-      </p>
-      <button id="refresh-weather" type="button" style="padding:10px 14px;border:1px solid #91cfff;border-radius:12px;background:#ffffff18;color:#fff;font-weight:700;cursor:pointer">
-        ↻ Actualizar ahora
-      </button>
+    <section><div class="section-head"><div><h3>Condiciones actuales</h3><p>Lecturas de los sensores disponibles en la estación</p></div></div><div class="metric-grid" id="metric-grid"></div></section>
+    <section><div class="section-head"><div><h3>Histórico meteorológico</h3><p id="history-updated">Gráficos horarios del último año</p></div></div>
+      <div class="history-panel"><div class="history-toolbar"><strong id="chart-title">Temperatura</strong><div class="history-selects"><select class="select-control" id="history-variable" aria-label="Dato histórico"></select><select class="select-control" id="history-range" aria-label="Periodo histórico"><option value="day">24 horas</option><option value="week">7 días</option><option value="month">30 días</option><option value="year">1 año</option></select></div></div><div class="chart-wrap"><canvas id="history-chart" aria-label="Gráfico histórico"></canvas><div id="chart-empty" class="chart-empty">Cargando el histórico…</div></div><div class="history-summary"><span>Mínimo<strong id="history-min">—</strong></span><span>Media<strong id="history-avg">—</strong></span><span>Máximo<strong id="history-max">—</strong></span></div></div>
     </section>
-    
-<section class="info" id="stations-panel">
-  <h2 class="section-title" style="margin-top:0">📍 Mis estaciones</h2>
-
-  <label for="station-name">Nombre de la estación</label>
-  <input
-    id="station-name"
-    type="text"
-    placeholder="Ej.: Estación de mi pueblo"
-    style="display:block;width:100%;padding:12px;margin:8px 0 14px;border-radius:10px;border:1px solid #29364c;background:#0b1220;color:#f3f6fc"
-  >
-
-  <label for="station-id">ID de Weathercloud</label>
-  <input
-    id="station-id"
-    type="text"
-    placeholder="Ej.: 3102580268"
-    style="display:block;width:100%;padding:12px;margin:8px 0 14px;border-radius:10px;border:1px solid #29364c;background:#0b1220;color:#f3f6fc"
-  >
-
-  <button
-    id="save-station"
-    type="button"
-    style="padding:12px 16px;border:0;border-radius:12px;background:#75c7ff;color:#0b1220;font-weight:700;cursor:pointer"
-  >
-    + Guardar estación
-  </button>
-
-  <p id="station-message" role="status"></p>
-
-  <label for="station-select">Estación seleccionada</label>
-  <select
-    id="station-select"
-    style="display:block;width:100%;padding:12px;margin-top:8px;border-radius:10px;background:#0b1220;color:#f3f6fc;border:1px solid #29364c"
-  >
-    <option value="">Todavía no hay estaciones guardadas</option>
-  </select>
-
-  <div id="station-list" style="margin-top:14px"></div>
-</section>
-
-<script>
-(() => {
-  const STORAGE_KEY = "weathercloud-stations-v1";
-
-  const nameInput = document.getElementById("station-name");
-  const idInput = document.getElementById("station-id");
-  const saveButton = document.getElementById("save-station");
-  const select = document.getElementById("station-select");
-  const list = document.getElementById("station-list");
-  const message = document.getElementById("station-message");
-  const selectedName = document.getElementById("selected-station-name");
-  const weatherStatus = document.getElementById("weather-status");
-  const refreshButton = document.getElementById("refresh-weather");
-
-  let stations = [];
-  let selectedId = "";
-
-  try {
-    stations = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    if (!Array.isArray(stations)) stations = [];
-    selectedId = localStorage.getItem("weathercloud-selected-station") || "";
-  } catch {
-    stations = [];
-  }
-
-  if (stations.length === 0) {
-    stations = [{ name: "Mi estación", id: "3102580268" }];
-    selectedId = "3102580268";
-    saveToStorage();
-  }
-
-  function saveToStorage() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(stations));
-    localStorage.setItem("weathercloud-selected-station", selectedId);
-  }
-
-  function render() {
-    select.replaceChildren();
-    list.replaceChildren();
-
-    if (stations.length === 0) {
-      const option = document.createElement("option");
-      option.value = "";
-      option.textContent = "Todavía no hay estaciones guardadas";
-      select.appendChild(option);
-      return;
-    }
-
-    stations.forEach(station => {
-      const option = document.createElement("option");
-      option.value = station.id;
-      option.textContent = station.name;
-      select.appendChild(option);
-
-      const item = document.createElement("div");
-      item.style.cssText =
-        "padding:12px;margin-top:8px;border:1px solid #29364c;border-radius:12px";
-
-      const title = document.createElement("strong");
-      title.textContent = station.name;
-
-      const details = document.createElement("div");
-      details.textContent = "ID: " + station.id;
-      details.style.color = "#a2afc5";
-      details.style.margin = "5px 0 10px";
-
-      const remove = document.createElement("button");
-      remove.type = "button";
-      remove.textContent = "Eliminar";
-      remove.style.cssText =
-        "padding:8px 12px;border:1px solid #52627a;border-radius:9px;background:transparent;color:#f3f6fc;cursor:pointer";
-
-      remove.addEventListener("click", () => {
-        stations = stations.filter(s => s.id !== station.id);
-        if (selectedId === station.id) {
-          selectedId = stations[0]?.id || "";
-        }
-        saveToStorage();
-        render();
-        refreshWeather();
-        message.textContent = "Estación eliminada.";
-      });
-
-      item.append(title, details, remove);
-      list.appendChild(item);
-    });
-
-    select.value = selectedId;
-    if (!select.value) {
-      selectedId = stations[0].id;
-      select.value = selectedId;
-      saveToStorage();
-    }
-    selectedName.textContent = stations.find(s => s.id === selectedId)?.name || "Mi estación";
-  }
-
-  function showValue(id, value, suffix = "", digits = 1) {
-    const element = document.getElementById(id);
-    element.textContent = value === null || value === undefined || value === ""
-      ? "—"
-      : `${Number(value).toFixed(digits)}${suffix}`;
-  }
-
-  async function refreshWeather() {
-    const station = stations.find(s => s.id === selectedId);
-    if (!station) return;
-    selectedName.textContent = station.name;
-
-    weatherStatus.textContent = "Consultando la estación…";
-    refreshButton.disabled = true;
-    try {
-      const response = await fetch(`./weather.json?refresh=${Date.now()}`, { cache: "no-store" });
-      if (!response.ok) throw new Error("Todavía no hay datos publicados. Espera a que termine la primera actualización de GitHub.");
-      const result = await response.json();
-      const stationData = result.stations?.[station.id];
-      if (!stationData) throw new Error("Esta estación no está incluida en la actualización automática. De momento está configurada la estación 3102580268.");
-      if (stationData.error) throw new Error(stationData.error);
-
-      const readings = stationData.readings;
-      showValue("temperature-value", readings.temp, "", 1);
-      showValue("humidity-value", readings.hum, " %", 0);
-      showValue("wind-value", readings.wspd === null ? null : readings.wspd * 3.6, " km/h", 1);
-      showValue("pressure-value", readings.bar, " hPa", 1);
-      showValue("rain-value", readings.rain, " mm", 1);
-      showValue("uv-value", readings.uvi, "", 0);
-      showValue("dew-value", readings.dew, " °C", 1);
-
-      const updatedAt = readings.epoch
-        ? new Date(readings.epoch * 1000).toLocaleString("es-ES")
-        : "hora no disponible";
-      const publishedAt = result.updated_at ? new Date(result.updated_at).toLocaleString("es-ES") : "hora no disponible";
-      weatherStatus.textContent = `Última lectura: ${updatedAt}. Datos publicados: ${publishedAt}.`;
-    } catch (error) {
-      weatherStatus.textContent = error.message || "No se pudo conectar con el servicio de datos.";
-    } finally {
-      refreshButton.disabled = false;
-    }
-  }
-
-  saveButton.addEventListener("click", () => {
-    const name = nameInput.value.trim();
-    const id = idInput.value.trim();
-
-    if (!name || !id) {
-      message.textContent = "Introduce el nombre y el ID de la estación.";
-      return;
-    }
-
-    if (!/^\d{1,20}$/.test(id)) {
-      message.textContent = "El ID contiene caracteres no admitidos.";
-      return;
-    }
-
-    const existing = stations.find(s => s.id === id);
-
-    if (existing) {
-      existing.name = name;
-      message.textContent = "Nombre de la estación actualizado.";
-    } else {
-      stations.push({ name, id });
-      message.textContent = "Estación guardada correctamente.";
-    }
-
-    selectedId = id;
-    saveToStorage();
-    render();
-    select.value = selectedId;
-    refreshWeather();
-
-    nameInput.value = "";
-    idInput.value = "";
-  });
-
-  select.addEventListener("change", () => {
-    selectedId = select.value;
-    saveToStorage();
-    message.textContent = "Estación seleccionada: " +
-      (stations.find(s => s.id === selectedId)?.name || "");
-    refreshWeather();
-  });
-
-  refreshButton.addEventListener("click", refreshWeather);
-
-  render();
-  refreshWeather();
-  window.setInterval(refreshWeather, 10 * 60 * 1000);
-})();
-</script>
-
-    <h2 class="section-title">Condiciones actuales</h2>
-
-    <section class="cards">
-      <article class="metric">
-        <div class="metric-icon">💧</div>
-        <div class="metric-label">Humedad</div>
-        <div class="metric-value" id="humidity-value">-- %</div>
-      </article>
-
-      <article class="metric">
-        <div class="metric-icon">🌬️</div>
-        <div class="metric-label">Viento</div>
-        <div class="metric-value" id="wind-value">-- km/h</div>
-      </article>
-
-      <article class="metric">
-        <div class="metric-icon">🧭</div>
-        <div class="metric-label">Presión</div>
-        <div class="metric-value" id="pressure-value">-- hPa</div>
-      </article>
-
-      <article class="metric">
-        <div class="metric-icon">🌧️</div>
-        <div class="metric-label">Lluvia</div>
-        <div class="metric-value" id="rain-value">-- mm</div>
-      </article>
-
-      <article class="metric">
-        <div class="metric-icon">☀️</div>
-        <div class="metric-label">Índice UV</div>
-        <div class="metric-value" id="uv-value">--</div>
-      </article>
-
-      <article class="metric">
-        <div class="metric-icon">🌡️</div>
-        <div class="metric-label">Punto de rocío</div>
-        <div class="metric-value" id="dew-value">-- °C</div>
-      </article>
-    </section>
-
-    <section class="info">
-      <strong>Lecturas de tu estación</strong>
-      <br>
-      GitHub publica nuevas lecturas aproximadamente cada diez minutos. El botón vuelve a consultar los últimos datos publicados.
-    </section>
-
-    <footer>
-      Weathercloud · Proyecto personal
-    </footer>
+    <details class="station-panel" id="station-panel"><summary>📍 Mis estaciones</summary><div class="station-form"><input class="text-control" id="station-name" type="text" placeholder="Nombre de la estación" aria-label="Nombre de la estación"><input class="text-control" id="station-id" type="text" inputmode="numeric" placeholder="ID de Weathercloud" aria-label="ID de Weathercloud"><button id="save-station" class="primary-button" type="button">Guardar</button></div><p class="station-help" id="station-message" role="status">Puedes cambiar el nombre aquí. Para añadir otro ID a los datos automáticos hay que configurarlo en el archivo stations.json del proyecto.</p><div id="station-list" class="station-list"></div></details>
+    <footer class="footer">Weathercloud · Datos de estación pública · Gratis con GitHub Pages</footer>
   </main>
+  <script>
+  (()=>{
+    const KEY="weathercloud-stations-v1", SELECTED="weathercloud-selected-station";
+    const metricDefs=[
+      ["humidity","Humedad","💧"," %",0],["feels","Sensación térmica","🌡️"," °C",1],["dew","Punto de rocío","💦"," °C",1],["pressure","Presión","🧭"," hPa",1],
+      ["wind","Viento","🌬️"," km/h",1],["gust","Racha máxima","💨"," km/h",1],["direction","Dirección del viento","🧭","°",0],["rain_rate","Intensidad de lluvia","🌧️"," mm/h",1],
+      ["rain","Lluvia acumulada","☔"," mm",1],["solar","Radiación solar","☀️"," W/m²",0],["uv","Índice UV","🕶️","",1],["inside_temp","Temperatura interior","🏠"," °C",1],["inside_hum","Humedad interior","🏡"," %",0]
+    ];
+    const chartDefs={temp:{name:"Temperatura",unit:"°C",color:"#79d6ff",digits:1},hum:{name:"Humedad",unit:"%",color:"#8fe6d0",digits:0},dew:{name:"Punto de rocío",unit:"°C",color:"#8bc6ff",digits:1},bar:{name:"Presión",unit:"hPa",color:"#c5a5ff",digits:1},wspd:{name:"Velocidad del viento",unit:"m/s",color:"#ffd27b",digits:1},wdir:{name:"Dirección del viento",unit:"°",color:"#ffc49b",digits:0},gust:{name:"Rachas de viento",unit:"m/s",color:"#ffa1b7",digits:1},rain:{name:"Lluvia",unit:"mm",color:"#63d5ff",digits:1},rainrate:{name:"Intensidad de lluvia",unit:"mm/h",color:"#7eb0ff",digits:1},solar:{name:"Radiación solar",unit:"W/m²",color:"#ffd27b",digits:0},uv:{name:"Índice UV",unit:"",color:"#ff9d72",digits:1}};
+    const $=id=>document.getElementById(id), variableSelect=$("history-variable"), rangeSelect=$("history-range");
+    let stations=[],selectedId="3102580268",weatherData=null,historyData=null,installPrompt=null;
+    try{stations=JSON.parse(localStorage.getItem(KEY)||"[]");selectedId=localStorage.getItem(SELECTED)||"3102580268";if(!Array.isArray(stations))stations=[]}catch{stations=[]}
+    if(!stations.some(s=>s.id===selectedId)){stations=[{name:"Mi estación",id:"3102580268"},...stations.filter(s=>s.id!=="3102580268")];selectedId="3102580268"}
+    function save(){localStorage.setItem(KEY,JSON.stringify(stations));localStorage.setItem(SELECTED,selectedId)}
+    function safeNumber(x){return x===null||x===undefined||x===""||!Number.isFinite(Number(x))?null:Number(x)}
+    function fmt(x,d=1){const n=safeNumber(x);return n===null?"—":n.toLocaleString("es-ES",{minimumFractionDigits:d,maximumFractionDigits:d})}
+    function drawStations(){const list=$("station-list");list.replaceChildren();stations.forEach(s=>{const chip=document.createElement("span");chip.className="station-chip";chip.textContent=s.name;const b=document.createElement("button");b.type="button";b.textContent="×";b.setAttribute("aria-label",`Eliminar ${s.name}`);b.onclick=()=>{stations=stations.filter(x=>x.id!==s.id);if(selectedId===s.id)selectedId=stations[0]?.id||"";save();drawStations();refreshCurrent()};chip.append(b);list.append(chip)})}
+    function displayMetrics(r){const grid=$("metric-grid");grid.replaceChildren();const values={humidity:r.hum,feels:r.heat??r.chill??r.temp,dew:r.dew,pressure:r.bar,wind:r.wspd===null?null:r.wspd*3.6,gust:r.gust===null?null:r.gust*3.6,direction:r.wdir,rain_rate:r.rainrate,rain:r.rain,solar:r.solar,uv:r.uvi,inside_temp:r.tempin,inside_hum:r.humin};metricDefs.forEach(([key,label,icon,unit,digits])=>{const card=document.createElement("article");card.className="metric";const top=document.createElement("div");top.className="metric-top";const title=document.createElement("span");title.textContent=label;const em=document.createElement("span");em.className="metric-icon";em.textContent=icon;top.append(title,em);const value=document.createElement("div");value.className="metric-value";value.textContent=fmt(values[key],digits)+unit;card.append(top,value);grid.append(card)})}
+    async function refreshCurrent(){const station=stations.find(s=>s.id===selectedId);if(!station)return;$("selected-station-name").textContent=station.name;$("connection-label").textContent="Actualizando";$("refresh-weather").disabled=true;try{const response=await fetch(`./weather.json?t=${Date.now()}`,{cache:"no-store"});if(!response.ok)throw Error("Esperando la primera publicación de GitHub.");weatherData=await response.json();const data=weatherData.stations?.[station.id];if(!data)throw Error("Esta estación no está incluida en la actualización automática. Está configurada la estación 3102580268.");if(data.error)throw Error(data.error);const r=data.readings;$("temperature-value").textContent=fmt(r.temp,1);displayMetrics(r);$("feels-value").textContent=fmt(r.heat??r.chill??r.temp,1)+" °C";$("station-state").textContent=r.epoch?"En línea":"Sin lectura";$("reading-time").textContent=r.epoch?new Date(r.epoch*1000).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"}):"Hora no disponible";$("weather-status").textContent="Lecturas de tu estación meteorológica";$("connection-label").textContent="Datos disponibles";if(historyData)updateHeroStats()}catch(e){$("weather-status").textContent=e.message||"No se pudieron cargar los datos.";$("weather-status").classList.add("error");$("connection-label").textContent="Sin conexión"}finally{$("refresh-weather").disabled=false}}
+    async function loadHistory(){try{const response=await fetch(`./history.json?t=${Date.now()}`,{cache:"no-store"});if(!response.ok)throw Error("El primer histórico aún no está publicado. Aparecerá tras la actualización diaria de GitHub.");historyData=await response.json();$("history-updated").textContent=`Última actualización: ${new Date(historyData.updated_at).toLocaleString("es-ES")}`;variableSelect.replaceChildren();Object.entries(chartDefs).forEach(([key,d])=>{const o=document.createElement("option");o.value=key;o.textContent=d.name;variableSelect.append(o)});renderChart();updateHeroStats()}catch(e){$("chart-empty").textContent=e.message}}
+    function updateHeroStats(){const points=historyData?.stations?.[selectedId]?.series?.temp||[];const cutoff=Date.now()/1000-86400;const day=points.filter(p=>p.time>=cutoff&&Number.isFinite(p.value));if(day.length){$("min-value").textContent=fmt(Math.min(...day.map(p=>p.value)),1)+" °C";$("max-value").textContent=fmt(Math.max(...day.map(p=>p.value)),1)+" °C"}}
+    function drawChart(points,def){const canvas=$("history-chart"),ctx=canvas.getContext("2d"),box=canvas.getBoundingClientRect(),ratio=window.devicePixelRatio||1;canvas.width=Math.max(1,box.width*ratio);canvas.height=Math.max(1,box.height*ratio);ctx.setTransform(ratio,0,0,ratio,0,0);const w=box.width,h=box.height,pad={l:42,r:12,t:12,b:28};ctx.clearRect(0,0,w,h);if(points.length<2)return;const vals=points.map(p=>p.value),min=Math.min(...vals),max=Math.max(...vals),span=max-min||1;const x=i=>pad.l+i*(w-pad.l-pad.r)/(points.length-1),y=v=>pad.t+(max-v)*(h-pad.t-pad.b)/span;ctx.font="11px system-ui";ctx.fillStyle="#90a5bc";ctx.strokeStyle="#263a52";ctx.lineWidth=1;for(let i=0;i<4;i++){const value=min+(max-min)*i/3,yy=y(value);ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(w-pad.r,yy);ctx.stroke();ctx.fillText(fmt(value,def.digits),2,yy+4)}const gradient=ctx.createLinearGradient(0,pad.t,0,h-pad.b);gradient.addColorStop(0,def.color+"55");gradient.addColorStop(1,def.color+"00");ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(x(i),y(p.value)):ctx.moveTo(x(i),y(p.value)));ctx.lineTo(x(points.length-1),h-pad.b);ctx.lineTo(x(0),h-pad.b);ctx.closePath();ctx.fillStyle=gradient;ctx.fill();ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(x(i),y(p.value)):ctx.moveTo(x(i),y(p.value)));ctx.strokeStyle=def.color;ctx.lineWidth=2.5;ctx.lineJoin="round";ctx.stroke();ctx.fillStyle="#90a5bc";ctx.fillText(new Date(points[0].time*1000).toLocaleDateString("es-ES"),pad.l,h-7);const last=new Date(points.at(-1).time*1000);ctx.fillText(last.toLocaleDateString("es-ES"),Math.max(pad.l,w-pad.r-55),h-7)}
+    function renderChart(){if(!historyData)return;const key=variableSelect.value||"temp",def=chartDefs[key],days={day:1,week:7,month:30,year:365}[rangeSelect.value]||1,cutoff=Date.now()/1000-days*86400;const points=(historyData.stations?.[selectedId]?.series?.[key]||[]).filter(p=>p.time>=cutoff&&Number.isFinite(p.value)).sort((a,b)=>a.time-b.time);$("chart-title").textContent=def.name;const empty=$("chart-empty");if(points.length<2){empty.classList.remove("hidden");empty.textContent=points.length?"Aún hay pocos datos para dibujar el gráfico.":"No hay histórico disponible para este sensor.";$("history-min").textContent=$("history-avg").textContent=$("history-max").textContent="—";drawChart([],def);return}empty.classList.add("hidden");drawChart(points,def);const values=points.map(p=>p.value),avg=values.reduce((a,b)=>a+b,0)/values.length;$("history-min").textContent=fmt(Math.min(...values),def.digits)+" "+def.unit;$("history-avg").textContent=fmt(avg,def.digits)+" "+def.unit;$("history-max").textContent=fmt(Math.max(...values),def.digits)+" "+def.unit}
+    $("refresh-weather").addEventListener("click",refreshCurrent);$("save-station").addEventListener("click",()=>{const name=$("station-name").value.trim(),id=$("station-id").value.trim();if(!name||!id){$("station-message").textContent="Escribe un nombre y un ID.";return}if(!/^\d{1,20}$/.test(id)){$("station-message").textContent="El ID debe contener solo números.";return}const existing=stations.find(s=>s.id===id);if(existing)existing.name=name;else stations.push({name,id});selectedId=id;save();drawStations();refreshCurrent();renderChart();updateHeroStats();$("station-name").value=$("station-id").value=""});$("settings-button").onclick=()=>{$("station-panel").open=!$("station-panel").open;if($("station-panel").open)$("station-panel").scrollIntoView({behavior:"smooth",block:"center"})};variableSelect.addEventListener("change",renderChart);rangeSelect.addEventListener("change",renderChart);window.addEventListener("resize",renderChart);window.setInterval(refreshCurrent,10*60*1000);drawStations();refreshCurrent();loadHistory();
+    window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installPrompt=e;$("install-button").classList.remove("hidden")});$("install-button").addEventListener("click",async()=>{if(!installPrompt)return;installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;$("install-button").classList.add("hidden")});if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+  })();
+  </script>
 </body>
 </html>

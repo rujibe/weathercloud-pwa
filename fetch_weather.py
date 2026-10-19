@@ -34,11 +34,19 @@ def main() -> None:
                     "epoch": values["epoch"],
                     "temp": values["temperature"],
                     "dew": values["dew_point"],
+                    "chill": values["wind_chill"],
+                    "heat": values["heat_index"],
                     "hum": values["humidity"],
                     "bar": values["pressure"],
+                    "wdir": values["wind_direction_avg"],
                     "wspd": values["wind_speed"],
+                    "gust": values["wind_gust"],
+                    "rainrate": values["rain_rate"],
                     "rain": values["rain"],
+                    "solar": values["solar_radiation"],
                     "uvi": values["uv_index"],
+                    "tempin": values["inside_temperature"],
+                    "humin": values["inside_humidity"],
                 }
                 result["stations"][station_id] = {"readings": readings}
             except Exception:
