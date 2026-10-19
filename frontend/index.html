@@ -1,0 +1,296 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="description" content="Tu panel meteorológico personal de Weathercloud">
+  <title>Weathercloud | Mi estación</title>
+
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #151f32;
+      --text: #f3f6fc;
+      --muted: #a2afc5;
+      --accent: #75c7ff;
+      --border: #29364c;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 22px 16px 40px;
+      background:
+        radial-gradient(ellipse at top right, #19365a, transparent 55%),
+        var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    .app {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 26px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      display: grid;
+      place-items: center;
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #75d5ff, #7285ff);
+      font-size: 27px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 21px;
+    }
+
+    .subtitle {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .settings-button {
+      width: 44px;
+      height: 44px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--panel);
+      color: var(--text);
+      font-size: 21px;
+      cursor: pointer;
+    }
+
+    .welcome {
+      margin-bottom: 22px;
+    }
+
+    .welcome h2 {
+      margin: 0 0 8px;
+      font-size: 27px;
+      letter-spacing: -0.7px;
+    }
+
+    .welcome p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .main-card {
+      padding: 23px;
+      border: 1px solid #354b69;
+      border-radius: 25px;
+      background: linear-gradient(145deg, #1b4268, #20294d);
+    }
+
+    .eyebrow {
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      color: #c2e6ff;
+    }
+
+    .station-name {
+      margin-top: 10px;
+      font-size: 23px;
+      font-weight: 750;
+    }
+
+    .temperature {
+      margin-top: 22px;
+      font-size: 67px;
+      font-weight: 300;
+      letter-spacing: -4px;
+    }
+
+    .temperature span {
+      font-size: 30px;
+      vertical-align: top;
+    }
+
+    .placeholder {
+      color: #d5e4f7;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .section-title {
+      margin: 27px 0 14px;
+      font-size: 17px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric {
+      min-height: 122px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 19px;
+      background: var(--panel);
+    }
+
+    .metric-icon {
+      font-size: 22px;
+    }
+
+    .metric-label {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .metric-value {
+      margin-top: 6px;
+      font-size: 23px;
+      font-weight: 700;
+    }
+
+    .info {
+      margin-top: 22px;
+      padding: 17px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    footer {
+      padding-top: 25px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 11px;
+    }
+
+    @media (min-width: 540px) {
+      .cards {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .main-card {
+        padding: 30px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true">☀️</div>
+        <div>
+          <h1>Weathercloud</h1>
+          <div class="subtitle">Tu tiempo, a tu manera</div>
+        </div>
+      </div>
+
+      <button class="settings-button"
+              type="button"
+              aria-label="Configuración"
+              title="Configuración">
+        ⚙
+      </button>
+    </header>
+
+    <section class="welcome">
+      <h2>Hola, bienvenido 👋</h2>
+      <p>
+        Consulta tus estaciones meteorológicas favoritas
+        y descubre cómo evoluciona el tiempo.
+      </p>
+    </section>
+
+    <section class="main-card">
+      <div class="eyebrow">ESTACIÓN SELECCIONADA</div>
+      <div class="station-name">Mi estación meteorológica</div>
+      <div class="temperature">--<span>°C</span></div>
+      <p class="placeholder">
+        Cuando conectemos Weathercloud, aquí aparecerá
+        la temperatura actual de la estación que elijas.
+      </p>
+    </section>
+
+    <h2 class="section-title">Condiciones actuales</h2>
+
+    <section class="cards">
+      <article class="metric">
+        <div class="metric-icon">💧</div>
+        <div class="metric-label">Humedad</div>
+        <div class="metric-value">-- %</div>
+      </article>
+
+      <article class="metric">
+        <div class="metric-icon">🌬️</div>
+        <div class="metric-label">Viento</div>
+        <div class="metric-value">-- km/h</div>
+      </article>
+
+      <article class="metric">
+        <div class="metric-icon">🧭</div>
+        <div class="metric-label">Presión</div>
+        <div class="metric-value">-- hPa</div>
+      </article>
+
+      <article class="metric">
+        <div class="metric-icon">🌧️</div>
+        <div class="metric-label">Lluvia</div>
+        <div class="metric-value">-- mm</div>
+      </article>
+
+      <article class="metric">
+        <div class="metric-icon">☀️</div>
+        <div class="metric-label">Índice UV</div>
+        <div class="metric-value">--</div>
+      </article>
+
+      <article class="metric">
+        <div class="metric-icon">🌡️</div>
+        <div class="metric-label">Punto de rocío</div>
+        <div class="metric-value">-- °C</div>
+      </article>
+    </section>
+
+    <section class="info">
+      <strong>Próximamente: tus estaciones e históricos</strong>
+      <br>
+      En los siguientes pasos añadiremos la posibilidad de guardar
+      estaciones públicas, seleccionarlas y consultar sus registros
+      históricos mediante gráficas.
+    </section>
+
+    <footer>
+      Weathercloud · Proyecto personal
+    </footer>
+  </main>
+</body>
+</html>
