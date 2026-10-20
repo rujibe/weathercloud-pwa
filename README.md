@@ -17,7 +17,7 @@ El plan gratuito de Cloudflare Workers ofrece hasta 100.000 solicitudes al día.
 
 ## Histórico
 
-Los gráficos consultan datos reales de Weathercloud para hoy desde las 00:00 locales, 7 días o 30 días. La máxima, mínima y lluvia diaria también se calculan desde las 00:00 locales. Algunos sensores no tienen histórico publicado por Weathercloud; en ese caso el gráfico informa que no hay datos. En el periodo de 30 días Weathercloud proporciona datos diarios, no lecturas por hora.
+Los gráficos consultan datos reales de Weathercloud para hoy desde las 00:00 locales, ayer, 7 días o 30 días. El gráfico de ayer usa el histórico horario de los últimos siete días y conserva solo el día natural anterior según la hora local del dispositivo. La lluvia muestra también la suma de los registros disponibles para el periodo elegido. La máxima, mínima y lluvia diaria también se calculan desde las 00:00 locales. Algunos sensores no tienen histórico publicado por Weathercloud; en ese caso el gráfico informa que no hay datos. En el periodo de 30 días Weathercloud proporciona datos diarios, no lecturas por hora.
 
 ## Publicación
 
