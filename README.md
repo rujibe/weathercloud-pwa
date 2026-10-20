@@ -11,13 +11,13 @@ La página guarda los nombres y los IDs de estaciones en el navegador. Para pode
 3. En la PWA, abre **Mis estaciones**, pega esa dirección y pulsa **Conectar**.
 4. Añade estaciones con su nombre e ID desde la misma pantalla.
 
-La página consulta todas las estaciones guardadas cada cinco minutos mientras está abierta. El Worker mantiene en caché las respuestas de Weathercloud durante diez minutos, que es el intervalo de actualización indicado para estaciones gratuitas. Por eso, la página puede consultar cada cinco minutos, pero Weathercloud podría devolver la misma lectura dos veces.
+La página consulta todas las estaciones guardadas cada cinco minutos mientras está abierta. El Worker mantiene en caché las condiciones actuales y el histórico del día durante cuatro minutos; los periodos de siete días se guardan quince minutos y los de treinta días, una hora. Weathercloud puede publicar lecturas con menos frecuencia; en ese caso, la página puede recibir el mismo dato varias veces.
 
 El plan gratuito de Cloudflare Workers ofrece hasta 100.000 solicitudes al día. [Límites oficiales](https://developers.cloudflare.com/workers/platform/limits/).
 
 ## Histórico
 
-Los gráficos consultan datos reales de Weathercloud para 24 horas, 7 días o 30 días. Algunos sensores no tienen histórico publicado por Weathercloud; en ese caso el gráfico informa que no hay datos.
+Los gráficos consultan datos reales de Weathercloud para hoy desde las 00:00 locales, 7 días o 30 días. La máxima, mínima y lluvia diaria también se calculan desde las 00:00 locales. Algunos sensores no tienen histórico publicado por Weathercloud; en ese caso el gráfico informa que no hay datos. En el periodo de 30 días Weathercloud proporciona datos diarios, no lecturas por hora.
 
 ## Publicación
 
