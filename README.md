@@ -19,6 +19,10 @@ El plan gratuito de Cloudflare Workers ofrece hasta 100.000 solicitudes al día.
 
 Los gráficos consultan datos reales de Weathercloud para hoy desde las 00:00 locales, ayer, 7 días o 30 días. El gráfico de ayer usa el histórico horario de los últimos siete días y conserva solo el día natural anterior según la hora local del dispositivo. La lluvia muestra también la suma de los registros disponibles para el periodo elegido. La máxima, mínima y lluvia diaria también se calculan desde las 00:00 locales. Algunos sensores no tienen histórico publicado por Weathercloud; en ese caso el gráfico informa que no hay datos. En el periodo de 30 días Weathercloud proporciona datos diarios, no lecturas por hora.
 
+## Previsión para mi ubicación
+
+Pulsa **Usar mi ubicación** y permite el acceso cuando el navegador lo solicite. La aplicación consulta a Open-Meteo y no guarda las coordenadas. La previsión incluye siete días con máximas, mínimas, probabilidad y cantidad de precipitación; al seleccionar un día, muestra temperatura, precipitación probable y viento por hora. Open-Meteo elige automáticamente los modelos adecuados para la ubicación.
+
 ## Publicación
 
 En **Settings → Pages**, la fuente de publicación debe ser **GitHub Actions**. El flujo está en `.github/workflows/actualizar-tiempo.yml`.
