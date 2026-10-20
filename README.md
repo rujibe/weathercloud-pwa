@@ -21,7 +21,7 @@ Los gráficos consultan datos reales de Weathercloud para hoy desde las 00:00 lo
 
 ## Previsión para mi ubicación
 
-Pulsa **Usar mi ubicación** y permite el acceso cuando el navegador lo solicite. La aplicación consulta a Open-Meteo y no guarda las coordenadas. La previsión incluye siete días con máximas, mínimas, probabilidad y cantidad de precipitación; al seleccionar un día, muestra temperatura, precipitación probable y viento por hora. Open-Meteo elige automáticamente los modelos adecuados para la ubicación.
+Pulsa **Usar mi ubicación** y permite el acceso cuando el navegador lo solicite. La aplicación envía las coordenadas a Open-Meteo para la previsión y a OpenStreetMap (Nominatim) para mostrar el nombre y la dirección aproximada; no las guarda en la app. El nombre depende de los datos cartográficos disponibles y puede señalar un lugar cercano, no el edificio exacto. La sección muestra también las coordenadas detectadas. La previsión incluye siete días con máximas, mínimas, probabilidad y cantidad de precipitación; al seleccionar un día, muestra temperatura, precipitación probable y viento por hora. Open-Meteo elige automáticamente los modelos adecuados para la ubicación.
 
 ## Publicación
 
