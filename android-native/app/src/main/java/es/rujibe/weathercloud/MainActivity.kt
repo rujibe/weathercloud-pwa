@@ -196,7 +196,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                 "Estación" -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     item {
                         val heroShape = RoundedCornerShape(28.dp)
-                        Box(Modifier.fillMaxWidth().clip(heroShape).background(Brush.linearGradient(if (light) listOf(Color(0xFFD8F0FF), Color(0xFFB9D5F4), Color(0xFFDCE6FA)) else listOf(Color(0xFF17466B), Color(0xFF183650), Color(0xFF24375C))).border(1.dp, if (light) Color(0xFFB4D4E9) else Color(0xFF3B6485), heroShape)) {
+                        Box(Modifier.fillMaxWidth().clip(heroShape).background(Brush.linearGradient(if (light) listOf(Color(0xFFD8F0FF), Color(0xFFB9D5F4), Color(0xFFDCE6FA)) else listOf(Color(0xFF17466B), Color(0xFF183650), Color(0xFF24375C)))).border(1.dp, if (light) Color(0xFFB4D4E9) else Color(0xFF3B6485), heroShape)) {
                             Column(Modifier.padding(24.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Text("●", color = if (readings.isNotEmpty()) Color(0xFF65E0AE) else muted, fontSize = 10.sp)
