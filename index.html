@@ -547,6 +547,15 @@
     #panel-forecast .forecast-hours-table-wrap{overflow-x:auto;overflow-y:visible;max-width:100%;-webkit-overflow-scrolling:touch}
     #panel-forecast .forecast-hour-table{min-width:560px}
     @media(max-width:540px){#panel-forecast .forecast-hours-window{max-height:90dvh}#panel-forecast .forecast-hours-window-head{flex-shrink:0}#panel-forecast .forecast-hours-modal-body{padding:8px}}
+
+    /* Corrección de scroll vertical de la tabla horaria en móviles */
+    #panel-forecast .forecast-hours-modal{display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:12px}
+    #panel-forecast .forecast-hours-window{display:block;flex:none;width:min(900px,100%);height:auto;max-height:none;min-height:0;overflow:visible;margin:auto 0}
+    #panel-forecast .forecast-hours-window-head{position:sticky;top:0;z-index:2}
+    #panel-forecast .forecast-hours-modal-body{display:block;max-height:none;height:auto;min-height:0;overflow:visible;touch-action:pan-y;padding:10px}
+    #panel-forecast .forecast-hours-table-wrap{display:block;max-height:none;overflow-x:auto;overflow-y:visible;touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch}
+    #panel-forecast .forecast-hour-table{margin-bottom:4px}
+    @media(max-width:540px){#panel-forecast .forecast-hours-modal{padding:8px;align-items:flex-start}#panel-forecast .forecast-hours-window{width:100%;margin:0}#panel-forecast .forecast-hours-window-head{position:sticky;top:0}#panel-forecast .forecast-hours-modal-body{padding:8px}}
 </style>
 </head>
 <body>
