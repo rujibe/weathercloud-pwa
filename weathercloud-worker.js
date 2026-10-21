@@ -172,7 +172,7 @@ export default {
         };
         let upstream;
         for (let attempt = 0; attempt < 2; attempt++) {
-          upstream = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent", geminiRequest);
+          upstream = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent", geminiRequest);
           if (upstream.ok || ![429, 503].includes(upstream.status) || attempt === 1) break;
           await new Promise(resolve => setTimeout(resolve, 1500));
         }
@@ -185,7 +185,7 @@ export default {
         }
         const analysis = result?.candidates?.[0]?.content?.parts?.map(part => part.text || "").join("").trim() || "";
         if (!analysis) return jsonResponse({ error: "Gemini no ha devuelto un análisis. Vuelve a intentarlo." }, 502, origin);
-        return jsonResponse({ analysis, station_id: stationId, model: "gemini-3.5-flash-lite" }, 200, origin);
+        return jsonResponse({ analysis, station_id: stationId, model: "gemini-2.5-flash-lite" }, 200, origin);
       } catch (error) {
         return jsonResponse({ error: `No se pudo consultar Gemini: ${String(error?.message || "error del servicio").slice(0, 240)}` }, 502, origin);
       }
