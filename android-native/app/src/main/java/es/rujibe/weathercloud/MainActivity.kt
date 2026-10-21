@@ -156,7 +156,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     if (base.isNotBlank()) JSONObject(httpGet("$base/api/history?station_id=${enc(station.id)}&variable=${enc(historyVariable)}&period=${enc(if (historyPeriod == "yesterday") "week" else historyPeriod)}"))
                     else JSONObject(httpGet("https://rujibe.github.io/weathercloud-pwa/history.json")).optJSONObject("stations")?.optJSONObject(station.id)?.optJSONObject("series") ?: JSONObject()
                 }
-                val pts = json.optJSONArray("points") ?: json.optJSONArray("temp") ?: JSONArray()
+                val pts = json.optJSONArray("points") ?: json.optJSONArray(historyVariable) ?: json.optJSONArray("temp") ?: JSONArray()
                 val points = (0 until pts.length()).mapNotNull { i ->
                     val p = pts.optJSONObject(i) ?: return@mapNotNull null
                     val v = p.optDouble("value", Double.NaN)
