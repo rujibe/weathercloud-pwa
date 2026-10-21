@@ -32,10 +32,12 @@ jobs:
           curl -fsSL https://raw.githubusercontent.com/rujibe/weathercloud-pwa/main/icons/icon-512.png -o app/src/main/res/mipmap-nodpi/ic_launcher.png
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug
+      - name: Name APK Mi Tiempo
+        run: cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/Mi-Tiempo.apk
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: weathercloud-android-debug-apk
-          path: android-native/app/build/outputs/apk/debug/app-debug.apk
+          name: mi-tiempo-android-apk
+          path: android-native/app/build/outputs/apk/debug/Mi-Tiempo.apk
           if-no-files-found: error
           retention-days: 14
