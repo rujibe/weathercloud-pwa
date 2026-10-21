@@ -331,6 +331,20 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                             Column(Modifier.padding(18.dp)) {
                                 Text("Histórico meteorológico", color = fg, fontWeight = FontWeight.Bold)
                                 Text("Datos de la estación seleccionada", color = muted, fontSize = 12.sp)
+                                if (history.isNotEmpty()) {
+                                    val values = history.map { it.second }
+                                    val unit = when (historyVariable) { "temp" -> "°C"; "hum" -> "%"; "bar" -> "hPa"; "wspd", "gust" -> "km/h"; "rain" -> "mm"; else -> "" }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        listOf("Mínimo" to (values.minOrNull() ?: 0.0), "Media" to values.average(), "Máximo" to (values.maxOrNull() ?: 0.0)).forEach { pair ->
+                                            Surface(color = bg, shape = RoundedCornerShape(12.dp), modifier = Modifier.weight(1f)) {
+                                                Column(Modifier.padding(10.dp)) {
+                                                    Text(pair.first, color = muted, fontSize = 11.sp)
+                                                    Text(String.format(Locale.getDefault(), "%.1f %s", pair.second, unit), color = fg, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                                 Text("Variable", color = muted, fontSize = 12.sp)
                                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     listOf("temp" to "Temperatura", "hum" to "Humedad", "bar" to "Presión", "wspd" to "Viento", "rain" to "Lluvia", "gust" to "Rachas").forEach { (key, label) ->
