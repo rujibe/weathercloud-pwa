@@ -256,6 +256,18 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                             }
                         }
                     }
+                    item {
+                        Surface(color = card, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(18.dp))) {
+                            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Text("🌤️", fontSize = 26.sp)
+                                Column(Modifier.weight(1f)) {
+                                    Text("Cambio de tiempo", color = fg, fontWeight = FontWeight.SemiBold)
+                                    Text(if (readings.isEmpty()) "Se analizará la evolución cuando haya datos suficientes." else "Lecturas actuales disponibles. Actualiza la estación para consultar los últimos datos.", color = muted, fontSize = 12.sp)
+                                    Text(if (readings.isEmpty()) "Sin tendencia calculada todavía" else "Estado de la estación: conectada", color = accentColor, fontSize = 11.sp)
+                                }
+                            }
+                        }
+                    }
                     if (readings.isEmpty()) item {
                         Surface(color = card, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFD8E2ED) else Color(0xFF263A52), RoundedCornerShape(18.dp))) {
                             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
