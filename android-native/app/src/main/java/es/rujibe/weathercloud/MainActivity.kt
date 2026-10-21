@@ -4,6 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
@@ -74,7 +77,8 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     var forecastLat by remember { mutableStateOf(prefs.getString("forecastLat", "40.4168") ?: "40.4168") }
     var forecastLon by remember { mutableStateOf(prefs.getString("forecastLon", "-3.7038") ?: "-3.7038") }
     val accentColor = when (accent) { "mint" -> Color(0xFF8EE6CF); "gold" -> Color(0xFFFFD27B); "purple" -> Color(0xFFC5A4FF); else -> Blue }
-    val light = theme == "light"
+    val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val light = when (theme) { "light" -> true; "system" -> !systemDark; else -> false }
     val bg = if (light) Color(0xFFF1F5FA) else Navy
     val card = if (light) Color.White else Panel
     val fg = if (light) Color(0xFF14243A) else TextMain
@@ -162,12 +166,14 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
         }
     }
 
+    LaunchedEffect(selectedId) { if (readings.isEmpty()) refreshCurrent() }
+
     MaterialTheme(colorScheme = if (light) lightColorScheme(primary = accentColor, background = bg, surface = card, onSurface = fg) else darkColorScheme(primary = accentColor, background = bg, surface = card, onSurface = fg)) {
         Column(Modifier.fillMaxSize().background(bg)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
-                    Text("WEATHERCLOUD", color = accentColor, fontSize = (12 * scale).sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
-                    Text(when(tab) { "Estación" -> "Mi estación"; "Pronóstico" -> "Previsión de 7 días"; "Análisis" -> "Análisis e históricos"; else -> tab }, color = fg, fontSize = (24 * scale).sp, fontWeight = FontWeight.Bold)
+                    Text("WEATHERCLOUD  ·  MI ESTACIÓN", color = accentColor, fontSize = (11 * scale).sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                    Text(when(tab) { "Estación" -> "El tiempo en tu estación"; "Pronóstico" -> "Previsión para 7 días"; "Análisis" -> "Análisis por estación"; else -> tab }, color = fg, fontSize = (24 * scale).sp, fontWeight = FontWeight.Bold)
                 }
                 TextButton(onClick = { showSettings = true }) { Text("⚙ Ajustes", color = accentColor) }
             }
@@ -176,21 +182,38 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
             when (tab) {
                 "Estación" -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     item {
-                        Surface(color = card, shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
-                            Column(Modifier.padding(20.dp)) {
-                                Text(stations.firstOrNull { it.id == selectedId }?.name ?: "Mi estación", color = muted)
+                        val heroShape = RoundedCornerShape(28.dp)
+                        Box(Modifier.fillMaxWidth().clip(heroShape).background(Brush.linearGradient(if (light) listOf(Color(0xFFD8F0FF), Color(0xFFB9D5F4), Color(0xFFDCE6FA)) else listOf(Color(0xFF17466B), Color(0xFF183650), Color(0xFF24375C))).border(1.dp, if (light) Color(0xFFB4D4E9) else Color(0xFF3B6485), heroShape)) {
+                            Column(Modifier.padding(24.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text("●", color = if (readings.isNotEmpty()) Color(0xFF65E0AE) else muted, fontSize = 10.sp)
+                                    Text(if (readings.isNotEmpty()) "ESTACIÓN CONECTADA" else "PANEL METEOROLÓGICO", color = if (light) Color(0xFF315D7B) else Color(0xFFB9F6DC), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.1.sp)
+                                }
+                                Spacer(Modifier.height(14.dp))
+                                Text(stations.firstOrNull { it.id == selectedId }?.name ?: "Mi estación", color = if (light) Color(0xFF14243A) else TextMain, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                                 val temp = readings.firstOrNull { it.key == "temp" }
-                                Text(if (temp != null) "${temp.value} °C" else "— °C", color = fg, fontSize = (46 * scale).sp, fontWeight = FontWeight.Bold)
-                                Text("Datos meteorológicos actuales", color = muted)
-                                Spacer(Modifier.height(12.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Button(onClick = { refreshCurrent() }, colors = ButtonDefaults.buttonColors(containerColor = accentColor)) { Text("Actualizar", color = Navy) }
-                                    OutlinedButton(onClick = { showStations = true }) { Text("Mis estaciones", color = fg) }
+                                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text(if (temp != null) temp.value else "—", color = if (light) Color(0xFF14243A) else TextMain, fontSize = (58 * scale).sp, fontWeight = FontWeight.Bold, letterSpacing = (-2).sp)
+                                    Text("°C", Modifier.padding(bottom = 9.dp), color = if (light) Color(0xFF315D7B) else Blue, fontSize = 22.sp, fontWeight = FontWeight.Medium)
+                                }
+                                Text("Condiciones meteorológicas actuales", color = if (light) Color(0xFF52677D) else Color(0xFFBCD0E4), fontSize = 13.sp)
+                                Spacer(Modifier.height(18.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(9.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Button(onClick = { refreshCurrent() }, colors = ButtonDefaults.buttonColors(containerColor = if (light) Color(0xFF142F4A) else accentColor), shape = RoundedCornerShape(13.dp)) { Text("↻  Actualizar", color = if (light) Color.White else Navy) }
+                                    OutlinedButton(onClick = { showStations = true }, shape = RoundedCornerShape(13.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = if (light) Color(0xFF14243A) else TextMain)) { Text("Mis estaciones") }
                                 }
                             }
                         }
                     }
-                    if (readings.isEmpty()) item { Text("Pulsa Actualizar para consultar las lecturas de tu estación.", color = muted, modifier = Modifier.padding(8.dp)) }
+                    if (readings.isEmpty()) item {
+                        Surface(color = card, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFD8E2ED) else Color(0xFF263A52), RoundedCornerShape(18.dp))) {
+                            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(if (loading) "Conectando con tu estación…" else "Aún no hay lecturas disponibles", color = fg, fontWeight = FontWeight.SemiBold)
+                                Text("Comprueba la conexión de datos en Ajustes y vuelve a actualizar.", color = muted, fontSize = 13.sp)
+                                if (!loading) OutlinedButton(onClick = { refreshCurrent() }) { Text("Reintentar") }
+                            }
+                        }
+                    }
                     items(readings.chunked(2)) { pair ->
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             pair.forEach { r ->
