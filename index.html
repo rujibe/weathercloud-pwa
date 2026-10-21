@@ -567,6 +567,16 @@
     body>#forecast-hours-modal .forecast-hours-table-wrap{display:block;width:100%;overflow-x:auto;overflow-y:visible;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
     body>#forecast-hours-modal .forecast-hour-table{min-width:560px}
     @media(max-width:540px){body>#forecast-hours-modal.forecast-hours-modal{align-items:flex-start;padding:env(safe-area-inset-top,8px) 8px 8px}body>#forecast-hours-modal .forecast-hours-window{width:100%;height:calc(100dvh - env(safe-area-inset-top,0px) - 16px);max-height:calc(100dvh - 16px);border-radius:16px}body>#forecast-hours-modal .forecast-hours-window-head{padding:12px}body>#forecast-hours-modal .forecast-hours-modal-body{padding:8px}}
+
+    /* Solución móvil: un único scroll vertical, sin contenedor horizontal anidado */
+    body>#forecast-hours-modal .forecast-hours-modal-body{overflow-y:scroll!important;overflow-x:hidden!important;touch-action:pan-y!important;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;flex:1 1 0!important;min-height:0!important;height:0!important;max-height:none!important}
+    body>#forecast-hours-modal .forecast-hours-table-wrap{overflow:visible!important;max-height:none!important;touch-action:auto!important;border:1px solid var(--line);border-radius:10px}
+    body>#forecast-hours-modal .forecast-hour-table{width:100%!important;min-width:0!important;table-layout:fixed;font-size:11px}
+    body>#forecast-hours-modal .forecast-hour-table th,body>#forecast-hours-modal .forecast-hour-table td{white-space:normal!important;overflow-wrap:anywhere;padding:9px 5px!important}
+    body>#forecast-hours-modal .forecast-hour-table th:first-child,body>#forecast-hours-modal .forecast-hour-table td:first-child{width:16%}
+    body>#forecast-hours-modal .forecast-hour-table th:nth-child(2),body>#forecast-hours-modal .forecast-hour-table td:nth-child(2){width:22%}
+    body>#forecast-hours-modal .forecast-hour-table th:nth-child(3),body>#forecast-hours-modal .forecast-hour-table td:nth-child(3){width:38%}
+    body>#forecast-hours-modal .forecast-hour-table th:nth-child(4),body>#forecast-hours-modal .forecast-hour-table td:nth-child(4){width:24%}
 </style>
 </head>
 <body>
