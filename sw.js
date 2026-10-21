@@ -1,4 +1,4 @@
-const CACHE_NAME = "weathercloud-shell-v9";
+const CACHE_NAME = "weathercloud-shell-v10";
 const SHELL = ["./", "./index.html", "./api-config.js", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png"];
 
 self.addEventListener("install", event => {
