@@ -39,6 +39,125 @@
     .forecast-hours:not(.hidden){display:flex;flex-wrap:nowrap;align-items:stretch;gap:7px;max-height:none;overflow-x:auto;overflow-y:hidden;padding:3px 2px 10px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}.forecast-hour{display:flex;flex:0 0 116px;min-width:116px;max-width:116px;flex-direction:column;align-items:flex-start;gap:4px;padding:8px;border-radius:11px;scroll-snap-align:start}.forecast-hour-top{display:flex;align-items:center;justify-content:space-between;width:100%;gap:4px;font-size:10px}.forecast-hour-weather{margin:1px 0;font-size:10px;line-height:1.2}.forecast-hour-temp{margin:0;font-size:16px;line-height:1.15}.forecast-hour-rain,.forecast-hour-gust{margin:0;font-size:9px;line-height:1.25;overflow-wrap:anywhere}.forecast-hours:not(.hidden){display:block;overflow-x:auto;overflow-y:visible;max-height:none;padding:4px 0 10px}.forecast-hour-table{width:100%;border-collapse:collapse;font-size:12px;min-width:510px;background:#0b1828;border:1px solid #263a52;border-radius:10px;overflow:hidden}.forecast-hour-table th,.forecast-hour-table td{padding:9px 10px;text-align:left;border-bottom:1px solid #263a52;white-space:nowrap}.forecast-hour-table th{background:#14243a;color:#a9ddff;font-size:11px;font-weight:700}.forecast-hour-table tbody tr:last-child td{border-bottom:0}.forecast-hour-table-time{font-weight:700;color:#eaf5ff}.forecast-day-insight{display:none!important}
     
 
+  
+    /* Responsive polish: Android-first, while preserving existing features and settings */
+    :root{--radius:20px;scroll-padding-top:16px}
+    html{min-width:320px;overflow-x:hidden;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+    body{overflow-x:hidden;min-width:320px;-webkit-tap-highlight-color:transparent}
+    button,select,input{touch-action:manipulation}
+    button,select,input[type="checkbox"],summary,.app-tab,.forecast-day,.station-choice,.station-remove{min-height:42px}
+    button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+    .page{width:min(1200px,calc(100% - 40px));padding-top:clamp(16px,2.5vw,28px)}
+    .topbar{gap:14px}
+    .top-actions{align-items:center;flex-wrap:wrap;justify-content:flex-end}
+    .hero,.history-panel,.forecast-panel,.analysis-card,.station-panel{min-width:0}
+    .hero{grid-template-columns:minmax(0,1.1fr) minmax(260px,.9fr);gap:clamp(18px,3vw,32px)}
+    .hero-main,.hero-side,.metric,.history-panel,.forecast-panel{min-width:0}
+    .metric-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .metric{overflow-wrap:anywhere}
+    .metric-value{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+    .history-toolbar,.section-head,.nearby-toolbar{min-width:0}
+    .history-selects{min-width:0}
+    .select-control,.text-control{max-width:100%;min-width:0}
+    .chart-wrap{width:100%;min-width:0}
+    .history-table-wrap,.forecast-hours-table-wrap{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+    .app-tabs{padding:6px;gap:6px}
+    .app-tab{min-width:0}
+    .app-tab span{white-space:nowrap}
+    .forecast-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .forecast-day-item.expanded{grid-column:1/-1}
+    .analysis-stations{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .analysis-card{min-width:0}
+    @media(min-width:1100px){
+      .page{padding-top:28px}
+      .metric-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+      .analysis-stations{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .chart-wrap{height:290px}
+    }
+    @media(min-width:761px) and (max-width:1099px){
+      .page{width:calc(100% - 36px)}
+      .hero{grid-template-columns:minmax(0,1fr) minmax(240px,.9fr);padding:clamp(22px,3vw,30px)}
+      .metric-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+      .analysis-stations{grid-template-columns:1fr}
+      .chart-wrap{height:260px}
+    }
+    @media(max-width:760px){
+      .page{width:calc(100% - 28px);padding-top:16px}
+      .topbar{align-items:flex-start}
+      .hero{grid-template-columns:minmax(0,1fr);padding:clamp(18px,4vw,24px);gap:17px}
+      .hero-side{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+      .analysis-stations{grid-template-columns:1fr}
+      .forecast-grid{grid-template-columns:1fr}
+      .forecast-day-item.expanded{grid-column:auto}
+      .history-toolbar{align-items:stretch}
+      .history-selects{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+      .history-selects select{width:100%}
+      .station-form{grid-template-columns:1fr}
+      .chart-wrap{height:235px}
+      .app-tabs{width:calc(100% - 20px)}
+    }
+    @media(max-width:540px){
+      .page{width:calc(100% - 22px);padding-top:12px;padding-bottom:calc(104px + env(safe-area-inset-bottom))}
+      .topbar{margin-bottom:17px;align-items:center}
+      .brand{gap:9px;min-width:0}
+      .brand-mark{width:40px;height:40px;flex:0 0 40px;border-radius:13px;font-size:21px}
+      .brand h1{font-size:15px}
+      .brand p{font-size:11px}
+      .top-actions{gap:6px}
+      .pill-button{padding:9px 10px;border-radius:12px}
+      .intro{gap:8px;margin:12px 0 15px}
+      .intro h2{font-size:clamp(23px,7vw,30px);letter-spacing:-.7px}
+      .intro p{font-size:13px}
+      .hero{padding:18px;border-radius:22px}
+      .station-title{font-size:20px}
+      .temp{font-size:clamp(70px,21vw,100px);letter-spacing:-5px}
+      .degrees{font-size:29px;padding-top:8px}
+      .weather-note{margin:9px 0 15px}
+      .hero-stat{padding:12px;border-radius:15px}
+      .hero-stat strong{font-size:18px}
+      .metric-grid{gap:8px}
+      .metric{min-height:100px;padding:12px;border-radius:16px}
+      .metric-top{font-size:11px;gap:5px}
+      .metric-value{font-size:clamp(18px,5vw,21px);margin-top:10px}
+      .metric-note{font-size:10px;line-height:1.4}
+      .section-head{margin:22px 0 11px;gap:5px}
+      .section-head h3{font-size:16px}
+      .history-panel,.forecast-panel{padding:13px;border-radius:18px}
+      .history-selects{gap:7px}
+      .select-control{padding:9px 10px;font-size:13px}
+      .chart-wrap{height:215px;margin-top:12px}
+      .history-summary{gap:8px 14px}
+      .station-panel{padding:14px;border-radius:17px}
+      .app-tabs{bottom:calc(7px + env(safe-area-inset-bottom));width:calc(100% - 16px);padding:5px;border-radius:16px}
+      .app-tab{min-height:46px;flex-direction:column;gap:2px;font-size:11px;line-height:1.15}
+      .app-tab span{font-size:11px}
+      .analysis-selector{align-items:stretch}
+      .analysis-selector select{min-width:0;width:100%}
+      .analysis-card{padding:13px;border-radius:17px}
+      .nearby-station{align-items:flex-start;flex-wrap:wrap}
+      .nearby-station-actions{width:100%;flex-wrap:wrap}
+      .forecast-day{grid-template-columns:minmax(0,1fr) 30px minmax(0,1fr) 22px;gap:4px 6px;padding:10px 8px}
+      .forecast-hour{grid-template-columns:54px 25px minmax(0,1fr) minmax(68px,.8fr);gap:5px 6px}
+    }
+    @media(max-width:360px){
+      .page{width:calc(100% - 16px)}
+      .brand p{max-width:145px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .top-actions{gap:4px}
+      .pill-button{padding:8px}
+      .hero{padding:15px}
+      .hero-side{gap:7px}
+      .hero-stat{padding:10px}
+      .metric{padding:10px}
+      .metric-value{font-size:18px}
+      .history-panel,.forecast-panel{padding:10px}
+      .history-selects{grid-template-columns:1fr}
+      .app-tabs{width:calc(100% - 12px)}
+    }
+    @media(prefers-reduced-motion:reduce){
+      *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+    }
+
   </style>
 </head>
 <body>
