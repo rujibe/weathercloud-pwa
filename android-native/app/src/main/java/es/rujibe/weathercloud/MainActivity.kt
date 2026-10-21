@@ -72,6 +72,8 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     var readings by remember { mutableStateOf<List<Reading>>(emptyList()) }
     var forecast by remember { mutableStateOf<List<String>>(emptyList()) }
     var history by remember { mutableStateOf<List<Pair<String, Double>>>(emptyList()) }
+    var historyVariable by remember { mutableStateOf("temp") }
+    var historyPeriod by remember { mutableStateOf("week") }
     var status by remember { mutableStateOf("Listo para consultar la estación") }
     var loading by remember { mutableStateOf(false) }
     var forecastLat by remember { mutableStateOf(prefs.getString("forecastLat", "40.4168") ?: "40.4168") }
@@ -151,7 +153,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
             try {
                 val base = apiBase.trim().trimEnd('/')
                 val json = withContext(Dispatchers.IO) {
-                    if (base.isNotBlank()) JSONObject(httpGet("$base/api/history?station_id=${enc(station.id)}&variable=temp&period=month"))
+                    if (base.isNotBlank()) JSONObject(httpGet("$base/api/history?station_id=${enc(station.id)}&variable=${enc(historyVariable)}&period=${enc(if (historyPeriod == "yesterday") "week" else historyPeriod)}"))
                     else JSONObject(httpGet("https://rujibe.github.io/weathercloud-pwa/history.json")).optJSONObject("stations")?.optJSONObject(station.id)?.optJSONObject("series") ?: JSONObject()
                 }
                 val pts = json.optJSONArray("points") ?: json.optJSONArray("temp") ?: JSONArray()
@@ -253,9 +255,21 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     item {
                         Surface(color = card, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(18.dp)) {
-                                Text("Histórico de temperatura", color = fg, fontWeight = FontWeight.Bold)
-                                Text("Últimos datos disponibles para la estación seleccionada.", color = muted, fontSize = 12.sp)
-                                Button(onClick = { refreshHistory() }, colors = ButtonDefaults.buttonColors(containerColor = accentColor), modifier = Modifier.padding(top = 8.dp)) { Text("Cargar histórico", color = Navy) }
+                                Text("Histórico meteorológico", color = fg, fontWeight = FontWeight.Bold)
+                                Text("Datos de la estación seleccionada", color = muted, fontSize = 12.sp)
+                                Text("Variable", color = muted, fontSize = 12.sp)
+                                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    listOf("temp" to "Temperatura", "hum" to "Humedad", "bar" to "Presión", "wspd" to "Viento", "rain" to "Lluvia", "gust" to "Rachas").forEach { (key, label) ->
+                                        FilterChip(selected = historyVariable == key, onClick = { historyVariable = key }, label = { Text(label) })
+                                    }
+                                }
+                                Text("Periodo", color = muted, fontSize = 12.sp)
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    listOf("day" to "Hoy", "yesterday" to "Ayer", "week" to "7 días", "month" to "30 días").forEach { (key, label) ->
+                                        FilterChip(selected = historyPeriod == key, onClick = { historyPeriod = key }, label = { Text(label) })
+                                    }
+                                }
+                                Button(onClick = { refreshHistory() }, colors = ButtonDefaults.buttonColors(containerColor = accentColor), modifier = Modifier.padding(top = 8.dp)) { Text("Actualizar gráfico", color = Navy) }
                                 if (history.isNotEmpty()) {
                                     val values = history.map { it.second }
                                     val min = values.minOrNull() ?: 0.0
