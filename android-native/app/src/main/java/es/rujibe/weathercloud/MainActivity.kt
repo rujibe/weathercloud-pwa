@@ -71,6 +71,9 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     var newId by remember { mutableStateOf("") }
     var readings by remember { mutableStateOf<List<Reading>>(emptyList()) }
     var forecast by remember { mutableStateOf<List<String>>(emptyList()) }
+    var hourlyForecast by remember { mutableStateOf<List<String>>(emptyList()) }
+    var forecastSearch by remember { mutableStateOf("") }
+    var forecastPlaceName by remember { mutableStateOf(prefs.getString("forecastPlaceName", "Madrid, España") ?: "Madrid, España") }
     var history by remember { mutableStateOf<List<Pair<String, Double>>>(emptyList()) }
     var historyVariable by remember { mutableStateOf("temp") }
     var historyPeriod by remember { mutableStateOf("week") }
@@ -78,7 +81,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     var loading by remember { mutableStateOf(false) }
     var forecastLat by remember { mutableStateOf(prefs.getString("forecastLat", "40.4168") ?: "40.4168") }
     var forecastLon by remember { mutableStateOf(prefs.getString("forecastLon", "-3.7038") ?: "-3.7038") }
-    val accentColor = when (accent) { "mint" -> Color(0xFF8EE6CF); "gold" -> Color(0xFFFFD27B); "purple" -> Color(0xFFC5A4FF); else -> Blue }
+    val accentColor = when (accent) { "mint" -> Color(0xFF8EE6CF); "gold", "orange" -> Color(0xFFFFD27B); "purple", "violet" -> Color(0xFFC5A4FF); else -> Blue }
     val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
     val light = when (theme) { "light" -> true; "system" -> !systemDark; else -> false }
     val bg = if (light) Color(0xFFF1F5FA) else Navy
@@ -245,21 +248,35 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     item {
                         Surface(color = card, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(16.dp)) {
-                                Text("Ubicación de la previsión", color = fg, fontWeight = FontWeight.Bold)
+                                Text("Previsión para 7 días", color = fg, fontWeight = FontWeight.Bold, fontSize = 19.sp)
+                                Text("Lugar: $forecastPlaceName", color = muted, fontSize = 12.sp)
+                                OutlinedTextField(forecastSearch, { forecastSearch = it }, label = { Text("Buscar ciudad o lugar") }, placeholder = { Text("Ej. Mérida, España") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Button(onClick = { searchForecastPlace() }, enabled = !loading, colors = ButtonDefaults.buttonColors(containerColor = accentColor)) { Text("Buscar lugar", color = Navy) }
+                                    OutlinedButton(onClick = { refreshForecast() }) { Text("Actualizar previsión") }
+                                }
+                                Text("Coordenadas de la ubicación seleccionada", color = muted, fontSize = 12.sp)
                                 Spacer(Modifier.height(8.dp))
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     OutlinedTextField(forecastLat, { forecastLat = it; prefs.edit().putString("forecastLat", it).apply() }, label = { Text("Latitud") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
                                     OutlinedTextField(forecastLon, { forecastLon = it; prefs.edit().putString("forecastLon", it).apply() }, label = { Text("Longitud") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
                                 }
-                                Button(onClick = { refreshForecast() }, modifier = Modifier.padding(top = 8.dp), colors = ButtonDefaults.buttonColors(containerColor = accentColor)) { Text("Cargar previsión", color = Navy) }
-                                Text("Fuente: Open-Meteo · se muestran máximas, mínimas, lluvia y estado diario.", color = muted, fontSize = 12.sp)
+                                Text("Fuente: Open-Meteo · máximas, mínimas, lluvia y estado diario.", color = muted, fontSize = 12.sp)
                             }
                         }
                     }
                     items(forecast) { day ->
                         Surface(color = card, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) { Text(day, Modifier.padding(16.dp), color = fg, fontSize = (14 * scale).sp) }
                     }
-                    if (forecast.isEmpty()) item { Text("Carga la previsión. Puedes usar las coordenadas de tu ubicación o de la zona que quieras consultar.", color = muted) }
+                    if (hourlyForecast.isNotEmpty()) {
+                        item { Text("Próximas horas · $forecastPlaceName", color = fg, fontWeight = FontWeight.Bold, fontSize = 18.sp) }
+                        items(hourlyForecast) { hour ->
+                            Surface(color = card, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(14.dp))) {
+                                Text(hour, Modifier.padding(14.dp), color = fg, fontSize = (13 * scale).sp)
+                            }
+                        }
+                    }
+                    if (forecast.isEmpty()) item { Text("Busca una ciudad o lugar para consultar la previsión y sus próximas horas.", color = muted) }
                 }
                 else -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     item {
@@ -317,13 +334,17 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     Text("Tema")
                     ChoiceRow(listOf("dark" to "Oscuro", "light" to "Claro", "system" to "Sistema"), theme) { theme = it; prefs.edit().putString("theme", it).apply() }
                     Text("Color de acento")
-                    ChoiceRow(listOf("blue" to "Azul", "mint" to "Menta", "gold" to "Dorado", "purple" to "Violeta"), accent) { accent = it; prefs.edit().putString("accent", it).apply() }
-                    Text("Tamaño de letra")
+                    ChoiceRow(listOf("blue" to "Azul", "mint" to "Menta", "violet" to "Violeta", "orange" to "Naranja"), accent) { accent = it; prefs.edit().putString("accent", it).apply() }
+                    Text("Tamaño del texto")
                     ChoiceRow(listOf("small" to "Pequeño", "normal" to "Normal", "large" to "Grande"), font) { font = it; prefs.edit().putString("font", it).apply() }
                     Text("Densidad de tarjetas")
                     ChoiceRow(listOf("compact" to "Compacta", "comfortable" to "Cómoda"), density) { density = it; prefs.edit().putString("density", it).apply() }
                     Row(verticalAlignment = Alignment.CenterVertically) { Text("Reducir animaciones", Modifier.weight(1f)); Switch(motion, { motion = it; prefs.edit().putBoolean("motion", it).apply() }) }
-                    Row(verticalAlignment = Alignment.CenterVertically) { Text("Estaciones cercanas", Modifier.weight(1f)); Switch(nearby, { nearby = it; prefs.edit().putBoolean("nearby", it).apply() }) }
+                    Row(verticalAlignment = Alignment.CenterVertically) { Text("Mostrar estaciones cercanas", Modifier.weight(1f)); Switch(nearby, { nearby = it; prefs.edit().putBoolean("nearby", it).apply() }) }
+                    OutlinedButton(onClick = {
+                        theme = "dark"; accent = "blue"; font = "normal"; density = "comfortable"; motion = false; nearby = true
+                        prefs.edit().putString("theme", theme).putString("accent", accent).putString("font", font).putString("density", density).putBoolean("motion", motion).putBoolean("nearby", nearby).apply()
+                    }, modifier = Modifier.fillMaxWidth()) { Text("Restablecer apariencia") }
                     Text("URL del puente de datos", fontWeight = FontWeight.Bold)
                     OutlinedTextField(apiBase, { apiBase = it }, placeholder = { Text("https://tu-api.example") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                     Button(onClick = { prefs.edit().putString("apiBase", apiBase.trim().trimEnd('/')).apply(); showSettings = false; refreshCurrent() }) { Text("Guardar conexión") }
