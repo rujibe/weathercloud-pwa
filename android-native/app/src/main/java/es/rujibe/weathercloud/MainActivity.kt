@@ -157,12 +157,23 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     else JSONObject(httpGet("https://rujibe.github.io/weathercloud-pwa/history.json")).optJSONObject("stations")?.optJSONObject(station.id)?.optJSONObject("series") ?: JSONObject()
                 }
                 val pts = json.optJSONArray("points") ?: json.optJSONArray("temp") ?: JSONArray()
-                history = (0 until pts.length()).mapNotNull { i ->
+                val points = (0 until pts.length()).mapNotNull { i ->
                     val p = pts.optJSONObject(i) ?: return@mapNotNull null
                     val v = p.optDouble("value", Double.NaN)
                     if (v.isNaN()) null else (p.optLong("time").toString() to v)
-                }.takeLast(90)
-                status = "Histórico de temperatura · ${history.size} puntos"
+                }
+                val now = System.currentTimeMillis() / 1000
+                history = when (historyPeriod) {
+                    "day" -> points.filter { it.first.toLongOrNull()?.let { t -> t >= now - 86400 } == true }
+                    "yesterday" -> {
+                        val zone = java.time.ZoneId.systemDefault()
+                        val start = java.time.LocalDate.now().minusDays(1).atStartOfDay(zone).toEpochSecond()
+                        val end = java.time.LocalDate.now().atStartOfDay(zone).toEpochSecond()
+                        points.filter { it.first.toLongOrNull()?.let { t -> t >= start && t < end } == true }
+                    }
+                    else -> points
+                }.takeLast(500)
+                status = "Histórico · ${history.size} puntos"
             } catch (e: Exception) { status = "No se pudo cargar el histórico: ${e.message}" }
             loading = false
         }
