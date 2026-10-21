@@ -230,8 +230,8 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     items(readings.chunked(2)) { pair ->
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             pair.forEach { r ->
-                                Surface(color = card, shape = RoundedCornerShape(18.dp), modifier = Modifier.weight(1f)) {
-                                    Column(Modifier.padding(16.dp)) {
+                                Surface(color = card, shape = RoundedCornerShape(18.dp), modifier = Modifier.weight(1f).border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(18.dp))) {
+                                    Column(Modifier.padding(if (density == "compact") 12.dp else 16.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                         Text("${r.icon}  ${r.label}", color = muted, fontSize = (12 * scale).sp)
                                         Text("${r.value} ${r.unit}", color = fg, fontSize = (22 * scale).sp, fontWeight = FontWeight.SemiBold)
                                     }
@@ -240,7 +240,6 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                             if (pair.size == 1) Spacer(Modifier.weight(1f))
                         }
                     }
-                    item { Text("El indicador de cambio meteorológico y los detalles avanzados se irán incorporando a esta interfaz nativa.", color = muted, fontSize = 12.sp) }
                 }
                 "Pronóstico" -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     item {
