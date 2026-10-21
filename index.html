@@ -611,6 +611,21 @@
     body[data-density="compact"] .metric{min-height:86px;padding:10px}body[data-density="compact"] .metric-value{margin-top:7px;font-size:20px}body[data-density="compact"] .metric-grid{gap:7px}
     body[data-motion="reduced"] *,body[data-motion="reduced"] *::before,body[data-motion="reduced"] *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
     @media(max-width:520px){.settings-dialog{padding:16px}.setting-row{align-items:flex-start;flex-direction:column}.setting-row select{max-width:100%;width:100%}.weather-change{padding:13px}}
+
+    /* Vistas internas a pantalla completa: la navegación inferior permanece accesible. */
+    .settings-overlay,.stations-overlay{z-index:15;display:block;padding:env(safe-area-inset-top) 0 calc(88px + env(safe-area-inset-bottom));background:var(--bg);backdrop-filter:none;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+    .settings-dialog,.stations-dialog{width:100%;max-width:none;height:100%;max-height:none;min-height:100%;margin:0;padding:20px 18px calc(28px + env(safe-area-inset-bottom));border:0;border-radius:0;box-shadow:none;overflow:visible;background:var(--bg);color:var(--text)}
+    .settings-heading{position:sticky;top:0;z-index:2;margin:-4px -2px 18px;padding:8px 2px 14px;background:var(--bg);border-bottom:1px solid var(--line)}
+    .settings-close{min-width:40px;min-height:40px;font-size:0}
+    #settings-close::before,#stations-close::before{content:"←";font-size:25px;line-height:1}
+    .stations-dialog .settings-heading{margin-bottom:16px}
+    .settings-stations-content{margin-top:16px}
+    .forecast-hours-modal{z-index:16;padding:env(safe-area-inset-top) 0 calc(88px + env(safe-area-inset-bottom));background:var(--bg);backdrop-filter:none;overflow-y:auto;align-items:stretch}
+    .forecast-hours-window{width:100%;height:100%;max-height:none;min-height:100%;border:0;border-radius:0;box-shadow:none;background:var(--bg)}
+    .forecast-hours-window-head{position:sticky;top:0;z-index:2;padding:14px 16px;background:var(--bg)}
+    .forecast-hours-modal-body{padding:12px 12px 28px}
+    @media(max-width:540px){.settings-dialog,.stations-dialog{padding:16px 14px calc(28px + env(safe-area-inset-bottom))}.settings-heading{margin-bottom:14px}.forecast-hours-modal-body{padding:8px 8px 24px}}
+
 </style>
 </head>
 <body>
@@ -621,7 +636,7 @@
     </header>
     <div id="settings-overlay" class="settings-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="settings-title">
       <section class="settings-dialog">
-        <div class="settings-heading"><div><h2 id="settings-title">Configuración</h2><p>Personaliza el aspecto de Weathercloud</p></div><button id="settings-close" class="settings-close" type="button" aria-label="Cerrar configuración">✕</button></div>
+        <div class="settings-heading"><div><h2 id="settings-title">Configuración</h2><p>Personaliza el aspecto de Weathercloud</p></div><button id="settings-close" class="settings-close" type="button" aria-label="Volver a la sección">←</button></div>
         <label class="setting-row"><span><strong>Tema</strong><small>Elige el aspecto de la aplicación</small></span><select id="pref-theme" class="select-control"><option value="dark">Oscuro</option><option value="light">Claro</option><option value="system">Según el dispositivo</option></select></label>
         <label class="setting-row"><span><strong>Color de acento</strong><small>Color de botones y detalles</small></span><select id="pref-accent" class="select-control"><option value="blue">Azul</option><option value="mint">Menta</option><option value="violet">Violeta</option><option value="orange">Naranja</option></select></label>
         <label class="setting-row"><span><strong>Tamaño del texto</strong><small>Escala general de lectura</small></span><select id="pref-font" class="select-control"><option value="normal">Normal</option><option value="large">Grande</option><option value="small">Pequeño</option></select></label>
@@ -634,7 +649,7 @@
     </div>
     <div id="stations-overlay" class="stations-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="stations-title">
       <section class="stations-dialog">
-        <div class="settings-heading"><div><h2 id="stations-title">Gestionar mis estaciones</h2><p>Configura el Worker y añade estaciones manualmente</p></div><button id="stations-close" class="settings-close" type="button" aria-label="Volver a configuración">✕</button></div>
+        <div class="settings-heading"><div><h2 id="stations-title">Gestionar mis estaciones</h2><p>Configura el Worker y añade estaciones manualmente</p></div><button id="stations-close" class="settings-close" type="button" aria-label="Volver a configuración">←</button></div>
         <div id="settings-stations-content" class="settings-stations-content"><details class="station-panel" id="station-panel" open><summary>📍 Mis estaciones</summary><p class="station-help">Conecta el puente de datos una sola vez. Después podrás añadir IDs de Weathercloud directamente desde esta web.</p><div class="station-form"><input class="text-control" id="api-url" type="url" placeholder="https://mi-puente.workers.dev" aria-label="Dirección del puente de datos"><button id="save-api-url" class="primary-button" type="button">Conectar</button></div><p class="station-help" id="api-message" role="status">La página actualizará tus estaciones cada 5 minutos mientras esté abierta. Weathercloud puede publicar datos con menos frecuencia.</p><hr style="border:0;border-top:1px solid var(--line);margin:16px 0"><div class="station-form"><input class="text-control" id="station-name" type="text" placeholder="Nombre de la estación" aria-label="Nombre de la estación"><input class="text-control" id="station-id" type="text" inputmode="numeric" placeholder="ID de Weathercloud" aria-label="ID de Weathercloud"><button id="save-station" class="primary-button" type="button">Guardar estación</button></div><p class="station-help" id="station-message" role="status">Tus estaciones se guardan en este dispositivo.</p><div id="station-list" class="station-list"></div></details></div>
         <div class="settings-actions"><button id="stations-back" class="primary-button" type="button">Volver a configuración</button></div>
       </section>
