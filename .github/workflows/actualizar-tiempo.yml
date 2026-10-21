@@ -42,6 +42,8 @@ jobs:
           git add history.json
           if ! git diff --cached --quiet; then
             git commit -m "Actualizar histórico meteorológico"
+            # Integrar cambios recientes para evitar fallos si otro commit llegó mientras se obtenían los datos.
+            git pull --rebase origin main
             git push
           fi
       - name: Preparar los archivos de la web
