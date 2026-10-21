@@ -571,12 +571,17 @@
     /* Solución móvil: un único scroll vertical, sin contenedor horizontal anidado */
     body>#forecast-hours-modal .forecast-hours-modal-body{overflow-y:scroll!important;overflow-x:hidden!important;touch-action:pan-y!important;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;flex:1 1 0!important;min-height:0!important;height:0!important;max-height:none!important}
     body>#forecast-hours-modal .forecast-hours-table-wrap{overflow:visible!important;max-height:none!important;touch-action:auto!important;border:1px solid var(--line);border-radius:10px}
-    body>#forecast-hours-modal .forecast-hour-table{width:100%!important;min-width:0!important;table-layout:fixed;font-size:11px}
-    body>#forecast-hours-modal .forecast-hour-table th,body>#forecast-hours-modal .forecast-hour-table td{white-space:normal!important;overflow-wrap:anywhere;padding:9px 5px!important}
-    body>#forecast-hours-modal .forecast-hour-table th:first-child,body>#forecast-hours-modal .forecast-hour-table td:first-child{width:16%}
-    body>#forecast-hours-modal .forecast-hour-table th:nth-child(2),body>#forecast-hours-modal .forecast-hour-table td:nth-child(2){width:22%}
-    body>#forecast-hours-modal .forecast-hour-table th:nth-child(3),body>#forecast-hours-modal .forecast-hour-table td:nth-child(3){width:38%}
+    body>#forecast-hours-modal .forecast-hour-table{width:100%!important;min-width:0!important;table-layout:fixed;font-size:14px;line-height:1.35}
+    body>#forecast-hours-modal .forecast-hour-table th,body>#forecast-hours-modal .forecast-hour-table td{white-space:normal!important;overflow-wrap:break-word;word-break:normal;padding:12px 6px!important;vertical-align:middle}
+    body>#forecast-hours-modal .forecast-hour-table th{font-size:12px;line-height:1.2}
+    body>#forecast-hours-modal .forecast-hour-table td{font-size:14px;font-weight:600}
+    body>#forecast-hours-modal .forecast-hour-table th:first-child,body>#forecast-hours-modal .forecast-hour-table td:first-child{width:18%}
+    body>#forecast-hours-modal .forecast-hour-table th:nth-child(2),body>#forecast-hours-modal .forecast-hour-table td:nth-child(2){width:24%}
+    body>#forecast-hours-modal .forecast-hour-table th:nth-child(3),body>#forecast-hours-modal .forecast-hour-table td:nth-child(3){width:34%}
     body>#forecast-hours-modal .forecast-hour-table th:nth-child(4),body>#forecast-hours-modal .forecast-hour-table td:nth-child(4){width:24%}
+    body>#forecast-hours-modal .forecast-hour-table td:first-child{font-variant-numeric:tabular-nums}
+    body>#forecast-hours-modal .forecast-hour-table td:nth-child(2){font-size:16px;font-weight:750}
+    @media(max-width:380px){body>#forecast-hours-modal .forecast-hour-table th,body>#forecast-hours-modal .forecast-hour-table td{padding:10px 4px!important}body>#forecast-hours-modal .forecast-hour-table th{font-size:11px}body>#forecast-hours-modal .forecast-hour-table td{font-size:13px}body>#forecast-hours-modal .forecast-hour-table td:nth-child(2){font-size:15px}}
 </style>
 </head>
 <body>
