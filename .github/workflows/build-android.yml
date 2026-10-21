@@ -26,6 +26,10 @@ jobs:
           java-version: "17"
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+      - name: Install Weathercloud launcher icon
+        run: |
+          mkdir -p app/src/main/res/mipmap-nodpi
+          curl -fsSL https://raw.githubusercontent.com/rujibe/weathercloud-pwa/main/icons/icon-512.png -o app/src/main/res/mipmap-nodpi/ic_launcher.png
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug
       - name: Upload APK
