@@ -128,6 +128,31 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
             loading = false
         }
     }
+    fun searchForecastPlace() {
+        val query = forecastSearch.trim()
+        if (query.length < 2) { status = "Escribe una ciudad o lugar"; return }
+        loading = true
+        scope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    JSONObject(httpGet("https://geocoding-api.open-meteo.com/v1/search?name=${enc(query)}&count=8&language=es&format=json"))
+                }
+                val places = result.optJSONArray("results")
+                if (places == null || places.length() == 0) {
+                    status = "No se encontraron lugares para «$query»"
+                } else {
+                    val place = places.getJSONObject(0)
+                    forecastLat = place.optDouble("latitude").toString()
+                    forecastLon = place.optDouble("longitude").toString()
+                    forecastPlaceName = listOf(place.optString("name"), place.optString("admin1"), place.optString("country")).filter { it.isNotBlank() }.distinct().joinToString(", ")
+                    prefs.edit().putString("forecastLat", forecastLat).putString("forecastLon", forecastLon).putString("forecastPlaceName", forecastPlaceName).apply()
+                    status = "Ubicación seleccionada · $forecastPlaceName"
+                    refreshForecast()
+                }
+            } catch (e: Exception) { status = "No se pudo buscar el lugar: ${e.message}" }
+            loading = false
+        }
+    }
     fun refreshForecast() {
         val lat = forecastLat.toDoubleOrNull()
         val lon = forecastLon.toDoubleOrNull()
@@ -142,6 +167,16 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                 forecast = (0 until d.getJSONArray("time").length()).map { i ->
                     val day = d.getJSONArray("time").getString(i)
                     "$day · ${weatherText(d.getJSONArray("weather_code").optInt(i))} · ${d.getJSONArray("temperature_2m_min").optDouble(i).toInt()}° / ${d.getJSONArray("temperature_2m_max").optDouble(i).toInt()}° · lluvia ${d.getJSONArray("precipitation_probability_max").optInt(i)}% · ${d.getJSONArray("precipitation_sum").optDouble(i)} mm"
+                }
+                val h = data.getJSONObject("hourly")
+                val times = h.getJSONArray("time")
+                val temps = h.getJSONArray("temperature_2m")
+                val probs = h.getJSONArray("precipitation_probability")
+                val codes = h.getJSONArray("weather_code")
+                val winds = h.getJSONArray("wind_speed_10m")
+                val today = java.time.LocalDate.now().toString()
+                hourlyForecast = (0 until times.length()).filter { times.optString(it).startsWith(today) }.map { i ->
+                    "${times.optString(i).substringAfter('T')} · ${temps.optDouble(i).toInt()}°C · ${weatherText(codes.optInt(i))} · lluvia ${probs.optInt(i)}% · viento ${winds.optDouble(i).toInt()} km/h"
                 }
                 val cur = data.optJSONObject("current")
                 if (cur != null) status = "Previsión cargada · ahora ${cur.optDouble("temperature_2m").toInt()}°C · viento ${cur.optDouble("wind_speed_10m").toInt()} km/h"
