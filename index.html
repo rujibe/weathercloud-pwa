@@ -158,6 +158,146 @@
       *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
     }
 
+  
+    /* WeatherMaster-inspired visual refresh — visual layer only */
+    :root{
+      --bg:#0b1220;--panel:#151f31;--panel2:#202d43;--line:#2a3950;
+      --text:#f4f6fb;--muted:#aab7ca;--blue:#a9c7ff;--mint:#a5e7d4;
+      --gold:#ffdc99;--radius:28px;
+      color-scheme:dark;
+    }
+    body{
+      background:
+        radial-gradient(ellipse at 50% -15%,#354e7d 0%,transparent 48%),
+        radial-gradient(ellipse at 100% 32%,#253e61 0%,transparent 34%),
+        #0b1220;
+      font-family: "Google Sans", "Segoe UI", Inter, system-ui, sans-serif;
+      letter-spacing:.005em;
+    }
+    .page{width:min(1120px,calc(100% - 36px));padding-top:22px}
+    .topbar{margin-bottom:22px}
+    .brand-mark{border-radius:50%;background:linear-gradient(145deg,#d8e5ff,#9bbdff);color:#182743;box-shadow:0 8px 28px #83aaff30}
+    .brand h1{font-size:18px;font-weight:750;letter-spacing:-.45px}
+    .brand p{font-size:12px}
+    .pill-button,.select-control,.text-control{
+      border:1px solid #34445e;background:#182438;color:var(--text);
+      border-radius:999px;padding:11px 16px;transition:background .2s,border-color .2s,transform .2s;
+    }
+    .pill-button:hover,.select-control:hover{border-color:#91b6ff;background:#22324b}
+    .pill-button:active,.primary-button:active{transform:scale(.98)}
+    .intro{margin:16px 0 18px;align-items:center}
+    .intro h2{font-size:clamp(25px,4.8vw,36px);letter-spacing:-1.25px;font-weight:650}
+    .intro p{font-size:14px}
+    .live-tag{padding:8px 12px;border:1px solid #2f6558;border-radius:999px;background:#17382f;color:#b6f4d9}
+    .hero{
+      grid-template-columns:minmax(0,1.1fr) minmax(250px,.9fr);
+      gap:28px;padding:clamp(24px,4vw,40px);
+      border:1px solid #4a5f85;border-radius:34px;
+      background:linear-gradient(145deg,#273e65 0%,#233752 48%,#373c62 100%);
+      box-shadow:0 18px 55px #0003;
+    }
+    .hero:after{width:340px;height:340px;right:-95px;top:-150px;background:#d6e5ff12}
+    .eyebrow{font-size:11px;letter-spacing:2px;color:#c8d9ff}
+    .station-title{font-size:24px;font-weight:650;letter-spacing:-.6px}
+    .station-picker{width:min(100%,330px);margin-top:10px;border-radius:15px;background:#162740bd}
+    .temp-line{margin-top:20px;gap:2px}
+    .temp{font-size:clamp(88px,15vw,130px);letter-spacing:-8px;font-weight:300}
+    .degrees{font-size:36px;padding-top:13px}
+    .weather-note{font-size:15px;color:#e0e9fa;margin:14px 0 20px}
+    .primary-button{
+      border:0;border-radius:999px;background:#d6e3ff;color:#182744;
+      padding:12px 18px;font-weight:750;box-shadow:0 5px 18px #101c3525;
+    }
+    .subtle{color:#d0dcf1}
+    .hero-side{gap:11px}
+    .hero-stat{
+      min-height:104px;padding:17px 15px;border:1px solid #ffffff20;
+      border-radius:23px;background:#111e344c;backdrop-filter:blur(14px);
+    }
+    .hero-stat span{font-size:12px;color:#d0daec}
+    .hero-stat strong{font-size:23px;letter-spacing:-.5px}
+    .section-head{margin:30px 0 14px}
+    .section-head h3{font-size:20px;letter-spacing:-.45px;font-weight:700}
+    .section-head p{font-size:12px}
+    .metric-grid{gap:12px}
+    .metric{
+      min-height:128px;padding:17px;border:1px solid #2d3b52;
+      border-radius:23px;background:linear-gradient(145deg,#1a263a,#141e2f);
+      box-shadow:0 5px 18px #0000000b;transition:transform .2s,border-color .2s;
+    }
+    .metric:hover{transform:translateY(-2px);border-color:#526789}
+    .metric-top{font-size:12px}
+    .metric-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#2a3a54;font-size:18px}
+    .metric-value{font-size:25px;letter-spacing:-.8px}
+    .metric-note{font-size:11px;line-height:1.45}
+    .nearby-panel,.history-panel,.forecast-panel,.analysis-card,.station-panel{
+      border:1px solid #2d3b52;border-radius:26px;background:linear-gradient(145deg,#172337,#121c2d);
+      box-shadow:0 8px 28px #0000000c;
+    }
+    .nearby-panel{padding:18px}
+    .history-panel,.forecast-panel{padding:21px}
+    .history-toolbar>strong{font-size:16px}
+    .select-control{border-radius:14px;padding:10px 13px}
+    .chart-selection{border-radius:16px;background:#111c2d}
+    .history-table-wrap{border-radius:16px}
+    .history-table th{background:#202e44}
+    .history-table tbody tr:hover,.history-table tbody tr.selected{background:#a9c7ff13}
+    .station-panel{padding:19px}
+    .station-panel summary{font-size:15px}
+    .text-control{border-radius:14px}
+    .app-tabs{
+      width:min(720px,calc(100% - 28px));gap:5px;padding:7px;
+      border:1px solid #65718a55;border-radius:999px;
+      background:#141e30eF;box-shadow:0 14px 42px #0005;backdrop-filter:blur(22px);
+    }
+    .app-tab{min-height:49px;border-radius:999px;font-size:13px;font-weight:650}
+    .app-tab.active{
+      border-color:transparent;background:#d6e3ff;color:#1a2945;
+      box-shadow:0 3px 12px #0002;
+    }
+    .app-tab:hover{background:#ffffff0d}
+    .app-tab.active:hover{background:#e0e9ff;color:#1a2945}
+    .forecast-day{border-radius:18px;background:#1a263a;border-color:#2d3b52;padding:14px}
+    .forecast-day:hover,.forecast-day.active{border-color:#a9c7ff;background:#243650}
+    .forecast-day-name{font-size:12px}
+    .forecast-day-icon{font-size:27px}
+    .forecast-day-temps{font-size:15px}
+    .forecast-hour{border-radius:17px;background:#1a263a;border-color:#2d3b52;padding:12px}
+    .forecast-hour-temp{font-size:20px}
+    .forecast-search{border-radius:18px;background:#111c2d;border-color:#2d3b52}
+    .forecast-search-results button{border-radius:14px;background:#1a263a}
+    .forecast-location-card{border-radius:18px;background:#a9c7ff0c}
+    .analysis-intro,.analysis-summary{border-radius:20px;background:linear-gradient(135deg,#1b304d,#19263b);border-color:#344b6c}
+    .analysis-day,.analysis-metric{border-radius:16px;background:#121e30;border-color:#2d3b52}
+    .nearby-station{border-radius:16px;background:#19263a;border-color:#2d3b52}
+    .footer{padding-bottom:8px}
+    @media(max-width:760px){
+      .hero{grid-template-columns:minmax(0,1fr);gap:20px}
+      .hero-side{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .app-tabs{width:calc(100% - 24px)}
+    }
+    @media(max-width:540px){
+      .page{width:calc(100% - 22px);padding-top:13px}
+      .brand-mark{border-radius:50%}
+      .intro h2{font-size:26px}
+      .intro p{font-size:13px}
+      .live-tag{font-size:11px;padding:7px 9px}
+      .hero{padding:20px;border-radius:27px}
+      .temp{font-size:clamp(82px,23vw,108px);letter-spacing:-6px}
+      .hero-stat{min-height:96px;padding:14px;border-radius:19px}
+      .hero-stat strong{font-size:21px}
+      .metric{min-height:115px;padding:13px;border-radius:20px}
+      .metric-value{font-size:22px}
+      .history-panel,.forecast-panel{padding:14px;border-radius:22px}
+      .section-head h3{font-size:18px}
+      .app-tabs{bottom:calc(8px + env(safe-area-inset-bottom));border-radius:999px}
+      .app-tab{border-radius:999px;min-height:47px}
+    }
+    @media(prefers-reduced-motion:reduce){
+      .metric,.pill-button,.primary-button{transition:none}
+    }
+
   </style>
 </head>
 <body>
