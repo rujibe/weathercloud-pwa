@@ -511,6 +511,59 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                             }
                         }
                     }
+                    item {
+                        Surface(color = card, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(20.dp))) {
+                            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Text("Histórico meteorológico", color = fg, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                Text("Evolución de la estación seleccionada", color = muted, fontSize = 12.sp)
+                                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    listOf("temp" to "Temperatura", "hum" to "Humedad", "bar" to "Presión", "wspd" to "Viento", "rain" to "Lluvia", "gust" to "Rachas").forEach { (key, label) ->
+                                        FilterChip(selected = historyVariable == key, onClick = { historyVariable = key; refreshHistory() }, label = { Text(label) })
+                                    }
+                                }
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    listOf("day" to "Hoy", "yesterday" to "Ayer", "week" to "7 días", "month" to "30 días").forEach { (key, label) ->
+                                        FilterChip(selected = historyPeriod == key, onClick = { historyPeriod = key; refreshHistory() }, label = { Text(label) })
+                                    }
+                                }
+                                if (history.isNotEmpty()) {
+                                    val values = history.map { it.second }
+                                    val minValue = values.minOrNull() ?: 0.0
+                                    val maxValue = values.maxOrNull() ?: 1.0
+                                    val historyUnit = when (historyVariable) { "temp" -> "°C"; "hum" -> "%"; "bar" -> "hPa"; "wspd", "gust" -> "km/h"; "rain" -> "mm"; else -> "" }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        listOf("Mín." to minValue, "Media" to values.average(), "Máx." to maxValue).forEach { pair ->
+                                            Surface(color = bg, shape = RoundedCornerShape(12.dp), modifier = Modifier.weight(1f)) {
+                                                Column(Modifier.padding(9.dp)) {
+                                                    Text(pair.first, color = muted, fontSize = 11.sp)
+                                                    Text(String.format(Locale.getDefault(), "%.1f %s", pair.second, historyUnit), color = fg, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                                }
+                                            }
+                                        }
+                                    }
+                                    Canvas(Modifier.fillMaxWidth().height(145.dp).pointerInput(history) {
+                                        detectTapGestures { offset ->
+                                            if (history.isNotEmpty()) selectedHistoryIndex = if (history.size == 1) 0 else ((offset.x / size.width) * (history.size - 1)).toInt().coerceIn(0, history.lastIndex)
+                                        }
+                                    }) {
+                                        val span = (maxValue - minValue).coerceAtLeast(0.1)
+                                        val points = values.mapIndexed { i, value -> androidx.compose.ui.geometry.Offset(if (values.size == 1) 0f else i * size.width / (values.size - 1), size.height - ((value - minValue) / span * (size.height - 12f)).toFloat() - 6f) }
+                                        for (i in 0 until points.lastIndex) drawLine(accentColor, points[i], points[i + 1], strokeWidth = 3f, cap = StrokeCap.Round)
+                                        if (selectedHistoryIndex in points.indices) drawCircle(accentColor, radius = 6f, center = points[selectedHistoryIndex])
+                                    }
+                                    if (selectedHistoryIndex in history.indices) {
+                                        val point = history[selectedHistoryIndex]
+                                        Text(point.first + " · " + String.format(Locale.getDefault(), "%.2f %s", point.second, historyUnit), color = accentColor, fontSize = 12.sp)
+                                    }
+                                } else {
+                                    Text("Carga el histórico para ver la evolución de tus sensores.", color = muted, fontSize = 12.sp)
+                                }
+                                Button(onClick = { refreshHistory() }, enabled = !loading, colors = ButtonDefaults.buttonColors(containerColor = accentColor), modifier = Modifier.fillMaxWidth()) {
+                                    Text(if (loading) "Cargando histórico…" else "Actualizar histórico", color = Navy)
+                                }
+                            }
+                        }
+                    }
                 }
                 "Pronóstico" -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     item {
