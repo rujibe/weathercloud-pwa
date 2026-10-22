@@ -128,31 +128,6 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
             loading = false
         }
     }
-    fun searchForecastPlace() {
-        val query = forecastSearch.trim()
-        if (query.length < 2) { status = "Escribe una ciudad o lugar"; return }
-        loading = true
-        scope.launch {
-            try {
-                val result = withContext(Dispatchers.IO) {
-                    JSONObject(httpGet("https://geocoding-api.open-meteo.com/v1/search?name=${enc(query)}&count=8&language=es&format=json"))
-                }
-                val places = result.optJSONArray("results")
-                if (places == null || places.length() == 0) {
-                    status = "No se encontraron lugares para «$query»"
-                } else {
-                    val place = places.getJSONObject(0)
-                    forecastLat = place.optDouble("latitude").toString()
-                    forecastLon = place.optDouble("longitude").toString()
-                    forecastPlaceName = listOf(place.optString("name"), place.optString("admin1"), place.optString("country")).filter { it.isNotBlank() }.distinct().joinToString(", ")
-                    prefs.edit().putString("forecastLat", forecastLat).putString("forecastLon", forecastLon).putString("forecastPlaceName", forecastPlaceName).apply()
-                    status = "Ubicación seleccionada · $forecastPlaceName"
-                    refreshForecast()
-                }
-            } catch (e: Exception) { status = "No se pudo buscar el lugar: ${e.message}" }
-            loading = false
-        }
-    }
     fun refreshForecast() {
         val lat = forecastLat.toDoubleOrNull()
         val lon = forecastLon.toDoubleOrNull()
@@ -181,6 +156,31 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                 val cur = data.optJSONObject("current")
                 if (cur != null) status = "Previsión cargada · ahora ${cur.optDouble("temperature_2m").toInt()}°C · viento ${cur.optDouble("wind_speed_10m").toInt()} km/h"
             } catch (e: Exception) { status = "Error al cargar previsión: ${e.message}" }
+            loading = false
+        }
+    }
+    fun searchForecastPlace() {
+        val query = forecastSearch.trim()
+        if (query.length < 2) { status = "Escribe una ciudad o lugar"; return }
+        loading = true
+        scope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    JSONObject(httpGet("https://geocoding-api.open-meteo.com/v1/search?name=${enc(query)}&count=8&language=es&format=json"))
+                }
+                val places = result.optJSONArray("results")
+                if (places == null || places.length() == 0) {
+                    status = "No se encontraron lugares para «$query»"
+                } else {
+                    val place = places.getJSONObject(0)
+                    forecastLat = place.optDouble("latitude").toString()
+                    forecastLon = place.optDouble("longitude").toString()
+                    forecastPlaceName = listOf(place.optString("name"), place.optString("admin1"), place.optString("country")).filter { it.isNotBlank() }.distinct().joinToString(", ")
+                    prefs.edit().putString("forecastLat", forecastLat).putString("forecastLon", forecastLon).putString("forecastPlaceName", forecastPlaceName).apply()
+                    status = "Ubicación seleccionada · $forecastPlaceName"
+                    refreshForecast()
+                }
+            } catch (e: Exception) { status = "No se pudo buscar el lugar: ${e.message}" }
             loading = false
         }
     }
