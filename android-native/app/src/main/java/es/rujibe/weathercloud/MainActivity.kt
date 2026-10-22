@@ -75,7 +75,7 @@ data class Reading(val key: String, val label: String, val value: String, val un
 data class StationAnalysis(val station: Station, val value: Double?, val unit: String, val label: String, val error: String = "", val observations: Int = 0, val variables: Int = 0)
 data class ValidationMetric(val label: String, val score: Double?, val mae: Double?, val count: Int, val unit: String)
 data class StationValidationResult(val station: Station, val place: String, val overall: Double?, val coverage: Int, val metrics: List<ValidationMetric>, val error: String = "")
-data class NearbyStation(val name: String, val id: String, val city: String, val distanceKm: Double, val updateMinutes: Int?)
+data class NearbyStation(val name: String, val id: String, val city: String, val distanceKm: Double, val updateMinutes: Int?, val latitude: Double, val longitude: Double)
 data class ForecastDay(val date: String, val code: Int, val minimum: Int, val maximum: Int, val rainChance: Int, val rainMm: Double)
 data class ForecastHour(val time: String, val code: Int, val temperature: Double, val rainChance: Int, val rainMm: Double, val wind: Double, val gust: Double, val date: String = "", val isDay: Boolean = true)
 data class ForecastPlace(val name: String, val latitude: Double, val longitude: Double, val admin: String, val country: String)
@@ -342,7 +342,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                         val update = if (item.has("update")) item.optDouble("update", Double.NaN).takeIf { it.isFinite() }?.div(60)?.toInt() else null
                         val city = listOf("city", "locality", "town", "municipality", "place", "location", "region").firstNotNullOfOrNull { key -> item.optString(key).trim().takeIf { it.isNotBlank() && !it.equals("null", true) } }.orEmpty()
                         val stationName = listOf("name", "device_name", "title").firstNotNullOfOrNull { key -> item.optString(key).trim().takeIf { it.isNotBlank() && !it.equals("null", true) } } ?: "Estación " + id
-                        NearbyStation(stationName, id, city, distance, update)
+                        NearbyStation(stationName, id, city, distance, update, lat2, lon2)
                     }
                 }.sortedBy { it.distanceKm }.take(30)
                 nearbyResults = parsed
@@ -804,6 +804,15 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                                 selectedId = station.id
                                                 persistStations()
                                                 refreshCurrent()
+                                                if (station.city.isBlank()) {
+                                                    scope.launch {
+                                                        val resolvedCity = withContext(Dispatchers.IO) { reverseGeocode(station.latitude, station.longitude) }
+                                                        if (resolvedCity.isNotBlank() && resolvedCity != "Mi ubicación") {
+                                                            stations = stations.map { if (it.id == station.id) it.copy(city = resolvedCity) else it }
+                                                            persistStations()
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }, enabled = stations.none { it.id == station.id }) { Text(if (stations.any { it.id == station.id }) "Ya añadida" else "＋ Añadir") }
                                     }
@@ -1474,7 +1483,7 @@ private fun formatWindDirection(value: String): String {
         val cardinal = when (token) {
             "N", "NORTH", "NORTE" -> "Norte"
             "NNE", "NORTHNORTHEAST" -> "Nornoreste"
-            "NE", "ENE", "NORTHEAST" -> "Noreste"
+            "NE", "NORTHEAST" -> "Noreste"
             "ENE", "EASTNORTHEAST" -> "Estenoreste"
             "E", "EAST", "ESTE" -> "Este"
             "ESE", "EASTSOUTHEAST" -> "Estesureste"
