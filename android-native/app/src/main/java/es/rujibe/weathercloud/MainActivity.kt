@@ -507,6 +507,24 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                     OutlinedButton(onClick = { requestDeviceLocation() }, enabled = !loading) { Text("Usar mi ubicación") }
                                 }
                                 OutlinedButton(onClick = { refreshForecast() }, modifier = Modifier.fillMaxWidth()) { Text("Actualizar previsión") }
+                                if (forecastSearchResults.isNotEmpty()) {
+                                    Text("Resultados de búsqueda", color = fg, fontWeight = FontWeight.SemiBold)
+                                    forecastSearchResults.forEach { place ->
+                                        TextButton(onClick = {
+                                            forecastLat = place.latitude.toString()
+                                            forecastLon = place.longitude.toString()
+                                            forecastPlaceName = listOf(place.name, place.admin, place.country).filter { it.isNotBlank() }.distinct().joinToString(", ")
+                                            forecastSearchResults = emptyList()
+                                            prefs.edit().putString("forecastLat", forecastLat).putString("forecastLon", forecastLon).putString("forecastPlaceName", forecastPlaceName).apply()
+                                            refreshForecast()
+                                        }, modifier = Modifier.fillMaxWidth()) {
+                                            Column(Modifier.fillMaxWidth()) {
+                                                Text(place.name, color = fg)
+                                                Text(listOf(place.admin, place.country).filter { it.isNotBlank() }.distinct().joinToString(", "), color = muted, fontSize = 11.sp)
+                                            }
+                                        }
+                                    }
+                                }
                                 Text("Coordenadas de la ubicación seleccionada", color = muted, fontSize = 12.sp)
                                 Spacer(Modifier.height(8.dp))
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
