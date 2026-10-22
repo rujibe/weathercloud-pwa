@@ -95,6 +95,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     var selectedId by remember { mutableStateOf(prefs.getString("selectedId", stations.firstOrNull()?.id ?: "3102580268") ?: "3102580268") }
     var showSettings by remember { mutableStateOf(false) }
     var showStations by remember { mutableStateOf(false) }
+    var metricInfo by remember { mutableStateOf<Reading?>(null) }
     var stationMenuExpanded by remember { mutableStateOf(false) }
     var newName by remember { mutableStateOf("") }
     var newId by remember { mutableStateOf("") }
@@ -569,12 +570,12 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                     Box(Modifier.size(8.dp).clip(RoundedCornerShape(50)).background(if (readings.isNotEmpty()) Color(0xFF65E0AE) else Muted))
                                     Text(if (readings.isNotEmpty()) "ESTACIÓN CONECTADA" else "PANEL METEOROLÓGICO", color = if (light) Color(0xFF315D7B) else Color(0xFFC1EAFF), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
                                 }
-                                Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
-                                    Column(Modifier.weight(1.1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                                         Text("AHORA EN", color = if (light) Color(0xFF315D7B) else Color(0xFFC1EAFF), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.7.sp)
                                         Box {
                                             TextButton(onClick = { stationMenuExpanded = true }, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)) {
-                                                Text("⌄  " + (stations.firstOrNull { it.id == selectedId }?.name ?: "Mi estación"), color = if (light) Color(0xFF14243A) else TextMain, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
+                                                Text("⌄  " + (stations.firstOrNull { it.id == selectedId }?.name ?: "Mi estación"), color = if (light) Color(0xFF14243A) else TextMain, fontSize = 22.sp, fontWeight = FontWeight.SemiBold, maxLines = 3)
                                             }
                                             DropdownMenu(expanded = stationMenuExpanded, onDismissRequest = { stationMenuExpanded = false }) {
                                                 stations.forEach { station ->
@@ -603,7 +604,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                             }
                                         }
                                     }
-                                    Column(Modifier.weight(0.9f), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(9.dp)) {
                                         listOf(
                                             "Sensación térmica" to (heroHeat?.let { it.value + " " + it.unit } ?: "—"),
                                             "Máxima hoy" to heroMax,
@@ -647,8 +648,13 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             pair.forEach { r ->
                                 Surface(color = card, shape = RoundedCornerShape(18.dp), modifier = Modifier.weight(1f).border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(18.dp))) {
-                                    Column(Modifier.padding(if (density == "compact") 12.dp else 16.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                                        Text("${r.icon}  ${r.label}", color = muted, fontSize = (12 * scale).sp)
+                                    Column(Modifier.padding(if (density == "compact") 12.dp else 16.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            Text("${r.icon}  ${r.label}", color = muted, fontSize = (12 * scale).sp, modifier = Modifier.weight(1f))
+                                            IconButton(onClick = { metricInfo = r }, modifier = Modifier.size(30.dp)) {
+                                                Text("ⓘ", color = accentColor, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                                            }
+                                        }
                                         Text("${r.value} ${r.unit}", color = fg, fontSize = (22 * scale).sp, fontWeight = FontWeight.SemiBold)
                                     }
                                 }
@@ -1171,6 +1177,32 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     }
                 }
             }
+        }
+        if (metricInfo != null) {
+            val metric = metricInfo!!
+            val explanation = when (metric.key) {
+                "temp" -> "Temperatura del aire medida por la estación, normalmente en una zona ventilada y protegida del sol directo."
+                "hum" -> "Humedad relativa: porcentaje de vapor de agua presente en el aire respecto al máximo posible a esa temperatura."
+                "bar" -> "Presión atmosférica, expresada en hPa. Ayuda a seguir cambios de tiempo; para comparar lugares influye la altitud."
+                "wspd" -> "Velocidad del viento registrada por la estación, expresada aquí en km/h."
+                "gust" -> "Racha de viento: velocidad máxima alcanzada por ráfagas durante el intervalo que registra la estación."
+                "rain" -> "Lluvia acumulada en milímetros. 1 mm equivale a 1 litro de agua por metro cuadrado."
+                "rainrate" -> "Intensidad de lluvia: ritmo de precipitación estimado en ese momento, en mm/h; no es el total acumulado."
+                "wdir" -> "Dirección del viento en grados: 0°/360° norte, 90° este, 180° sur y 270° oeste."
+                "solar" -> "Radiación solar recibida, en W/m². Suele bajar con nubes, sombras y durante la noche."
+                "uv" -> "Índice ultravioleta: indicador de la intensidad de radiación UV y del riesgo de exposición solar."
+                "dew" -> "Punto de rocío: temperatura a la que el aire alcanzaría la saturación y empezaría a condensar."
+                "heat" -> "Sensación térmica estimada a partir de las condiciones disponibles; puede diferir de la temperatura real."
+                "tempin" -> "Temperatura medida dentro del edificio o recinto donde está instalado el sensor interior."
+                "humin" -> "Humedad relativa medida por el sensor situado en el interior."
+                else -> "Dato meteorológico comunicado por la estación. Su significado exacto puede depender del sensor y del modelo."
+            }
+            AlertDialog(onDismissRequest = { metricInfo = null }, title = { Text(metric.label) },
+                text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("${metric.value} ${metric.unit}".trim(), style = MaterialTheme.typography.titleLarge, color = accentColor)
+                    Text(explanation)
+                } },
+                confirmButton = { TextButton(onClick = { metricInfo = null }) { Text("Entendido") } })
         }
         if (selectedForecastDay != null) {
             val selectedDay = forecast.firstOrNull { it.date == selectedForecastDay }
