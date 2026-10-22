@@ -101,6 +101,10 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     var newName by remember { mutableStateOf("") }
     var newId by remember { mutableStateOf("") }
     var newCity by remember { mutableStateOf("") }
+    var editingStationId by remember { mutableStateOf<String?>(null) }
+    var editingStationName by remember { mutableStateOf("") }
+    var editingStationCity by remember { mutableStateOf("") }
+    var nearbyListExpanded by remember { mutableStateOf(true) }
     var readings by remember { mutableStateOf<List<Reading>>(emptyList()) }
     var lastUpdatedAt by remember { mutableStateOf(prefs.getString("lastUpdatedAt", "") ?: "") }
     var historyUnitChoice by remember { mutableStateOf(prefs.getString("historyUnitChoice", "auto") ?: "auto") }
@@ -195,7 +199,11 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     if (raw == null || raw == JSONObject.NULL || raw.toString().isBlank()) null
                     else {
                         val numeric = raw.toString().toDoubleOrNull()
-                        val display = if (f[0] == "wdir") formatWindDirection(raw.toString()) else numeric?.let { String.format(Locale.getDefault(), "%.1f", it) } ?: raw.toString()
+                        val display = if (f[0] == "wdir") {
+                            val degrees = numeric?.let { (((it % 360.0) + 360.0) % 360.0).toInt() }
+                            val abbreviated = abbreviateWindDirection(formatWindDirection(raw.toString()))
+                            if (degrees != null) "$degrees° $abbreviated" else abbreviated
+                        } else numeric?.let { String.format(Locale.getDefault(), "%.1f", it) } ?: raw.toString()
                         Reading(f[0], f[1], display, if (f[0] == "wdir") "" else f[2], f[3])
                     }
                 }
@@ -698,7 +706,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                             TextButton(onClick = { stationMenuExpanded = true }, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)) {
                                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                                     Text("⌄  " + (activeStation?.name?.takeIf { it.isNotBlank() } ?: "Mi estación"), color = if (light) Color(0xFF14243A) else TextMain, fontSize = 22.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
-                                                    activeStation?.city?.takeIf { it.isNotBlank() }?.let { Text(it, color = muted, fontSize = 14.sp, fontWeight = FontWeight.Normal, maxLines = 1) }
+                                                    Text(activeStation?.city?.takeIf { it.isNotBlank() } ?: "Localidad no indicada", color = muted, fontSize = 14.sp, fontWeight = FontWeight.Normal, maxLines = 1)
                                                 }
                                             }
                                             DropdownMenu(expanded = stationMenuExpanded, onDismissRequest = { stationMenuExpanded = false }) {
@@ -804,8 +812,13 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     if (nearby) item {
                         Surface(color = card, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(18.dp))) {
                             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                Text("Estaciones Weathercloud cercanas", color = fg, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                                Text("Busca estaciones públicas alrededor de la ubicación seleccionada en Previsión.", color = muted, fontSize = 12.sp)
+                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text("Estaciones Weathercloud cercanas", color = fg, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                        Text("Busca estaciones públicas alrededor de la ubicación seleccionada en Previsión.", color = muted, fontSize = 12.sp)
+                                    }
+                                    TextButton(onClick = { nearbyListExpanded = !nearbyListExpanded }) { Text(if (nearbyListExpanded) "Plegar ▴" else "Desplegar ▾") }
+                                }
                                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     listOf("5", "10", "25", "50").forEach { radius ->
                                         FilterChip(selected = nearbyRadius == radius, onClick = { nearbyRadius = radius }, label = { Text(radius + " km") })
@@ -813,7 +826,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                 }
                                 Button(onClick = { searchNearbyStations() }, enabled = !loading, colors = ButtonDefaults.buttonColors(containerColor = accentColor)) { Text("📡 Buscar estaciones", color = Navy) }
                                 Text(nearbyMessage, color = muted, fontSize = 12.sp)
-                                nearbyResults.forEach { station ->
+                                if (nearbyListExpanded) nearbyResults.forEach { station ->
                                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         Column(Modifier.weight(1f)) {
                                             Text(station.name, color = fg, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
@@ -1477,6 +1490,24 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
             },
             confirmButton = { TextButton(onClick = { showSettings = false }) { Text("Cerrar") } }
         )
+        if (editingStationId != null) AlertDialog(
+            onDismissRequest = { editingStationId = null },
+            title = { Text("Editar estación") },
+            text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(editingStationName, { editingStationName = it }, label = { Text("Nombre") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                OutlinedTextField(editingStationCity, { editingStationCity = it }, label = { Text("Localidad") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                Text("ID de Weathercloud: ${editingStationId}", color = muted, fontSize = 12.sp)
+            } },
+            confirmButton = { TextButton(onClick = {
+                val id = editingStationId
+                if (id != null) {
+                    stations = stations.map { if (it.id == id) it.copy(name = editingStationName.trim().ifBlank { it.name }, city = editingStationCity.trim()) else it }
+                    persistStations(); editingStationId = null
+                    if (id == selectedId) refreshCurrent()
+                }
+            }) { Text("Guardar") } },
+            dismissButton = { TextButton(onClick = { editingStationId = null }) { Text("Cancelar") } }
+        )
         if (showStations) AlertDialog(
             onDismissRequest = { showStations = false },
             title = { Text("Gestionar mis estaciones") },
@@ -1485,7 +1516,8 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     stations.forEach { station ->
                         Surface(color = card, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
                             Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Column(Modifier.weight(1f)) { Text(station.name, color = fg, fontWeight = FontWeight.Bold); Text(station.id, color = muted, fontSize = 12.sp) }
+                                Column(Modifier.weight(1f)) { Text(station.name, color = fg, fontWeight = FontWeight.Bold); Text(station.city.ifBlank { "Localidad no indicada" }, color = muted, fontSize = 12.sp); Text(station.id, color = muted, fontSize = 12.sp) }
+                                TextButton(onClick = { editingStationId = station.id; editingStationName = station.name; editingStationCity = station.city }) { Text("Editar") }
                                 TextButton(onClick = { selectedId = station.id; persistStations(); showStations = false; refreshCurrent() }) { Text(if (selectedId == station.id) "Activa" else "Usar") }
                                 TextButton(onClick = { stations = stations.filterNot { it.id == station.id }; if (stations.isEmpty()) stations = listOf(Station("Mi estación", "3102580268")); if (stations.none { it.id == selectedId }) selectedId = stations.first().id; persistStations() }) { Text("Eliminar") }
                             }
@@ -1548,6 +1580,10 @@ private fun formatWindDirection(value: String): String {
     val directions = listOf("Norte", "Noreste", "Este", "Sureste", "Sur", "Suroeste", "Oeste", "Noroeste")
     val index = kotlin.math.floor((normalized + 22.5) / 45.0).toInt() % 8
     return directions[index]
+}
+
+private fun abbreviateWindDirection(direction: String): String = when (direction.lowercase(Locale.ROOT)) {
+    "norte" -> "N"; "noreste" -> "NE"; "este" -> "E"; "sureste" -> "SE"; "sur" -> "S"; "suroeste" -> "SO"; "oeste" -> "O"; "noroeste" -> "NO"; else -> direction
 }
 
 private fun loadStations(prefs: android.content.SharedPreferences): List<Station> {
