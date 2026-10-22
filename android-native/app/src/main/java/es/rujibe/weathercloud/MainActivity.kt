@@ -65,6 +65,8 @@ data class Reading(val key: String, val label: String, val value: String, val un
 data class StationAnalysis(val station: Station, val value: Double?, val unit: String, val label: String, val error: String = "")
 data class NearbyStation(val name: String, val id: String, val city: String, val distanceKm: Double, val updateMinutes: Int?)
 data class ForecastDay(val date: String, val code: Int, val minimum: Int, val maximum: Int, val rainChance: Int, val rainMm: Double)
+data class ForecastHour(val time: String, val code: Int, val temperature: Double, val rainChance: Int, val rainMm: Double, val wind: Double, val gust: Double)
+data class ForecastPlace(val name: String, val latitude: Double, val longitude: Double, val admin: String, val country: String)
 
 @Composable
 fun WeathercloudApp(prefs: android.content.SharedPreferences) {
@@ -87,7 +89,9 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     var newId by remember { mutableStateOf("") }
     var readings by remember { mutableStateOf<List<Reading>>(emptyList()) }
     var forecast by remember { mutableStateOf<List<ForecastDay>>(emptyList()) }
-    var hourlyForecast by remember { mutableStateOf<List<String>>(emptyList()) }
+    var hourlyForecast by remember { mutableStateOf<List<ForecastHour>>(emptyList()) }
+    var forecastSearchResults by remember { mutableStateOf<List<ForecastPlace>>(emptyList()) }
+    var forecastNow by remember { mutableStateOf<ForecastHour?>(null) }
     var forecastSearch by remember { mutableStateOf("") }
     var forecastPlaceName by remember { mutableStateOf(prefs.getString("forecastPlaceName", "Madrid, España") ?: "Madrid, España") }
     var history by remember { mutableStateOf<List<Pair<String, Double>>>(emptyList()) }
@@ -178,12 +182,17 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                 val probs = h.getJSONArray("precipitation_probability")
                 val codes = h.getJSONArray("weather_code")
                 val winds = h.getJSONArray("wind_speed_10m")
+                val gusts = h.getJSONArray("wind_gusts_10m")
+                val rains = h.getJSONArray("precipitation")
                 val today = java.time.LocalDate.now().toString()
                 hourlyForecast = (0 until times.length()).filter { times.optString(it).startsWith(today) }.map { i ->
-                    "${times.optString(i).substringAfter('T')} · ${temps.optDouble(i).toInt()}°C · ${weatherText(codes.optInt(i))} · lluvia ${probs.optInt(i)}% · viento ${winds.optDouble(i).toInt()} km/h"
+                    ForecastHour(times.optString(i).substringAfter('T'), codes.optInt(i), temps.optDouble(i), probs.optInt(i), rains.optDouble(i), winds.optDouble(i), gusts.optDouble(i))
                 }
                 val cur = data.optJSONObject("current")
-                if (cur != null) status = "Previsión cargada · ahora ${cur.optDouble("temperature_2m").toInt()}°C · viento ${cur.optDouble("wind_speed_10m").toInt()} km/h"
+                if (cur != null) {
+                    forecastNow = ForecastHour(cur.optString("time").substringAfter('T'), cur.optInt("weather_code"), cur.optDouble("temperature_2m"), cur.optInt("precipitation_probability"), cur.optDouble("precipitation"), cur.optDouble("wind_speed_10m"), cur.optDouble("wind_gusts_10m"))
+                    status = "Previsión cargada · ahora ${cur.optDouble("temperature_2m").toInt()}°C · viento ${cur.optDouble("wind_speed_10m").toInt()} km/h"
+                }
             } catch (e: Exception) { status = "Error al cargar previsión: ${e.message}" }
             loading = false
         }
@@ -199,15 +208,14 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                 }
                 val places = result.optJSONArray("results")
                 if (places == null || places.length() == 0) {
+                    forecastSearchResults = emptyList()
                     status = "No se encontraron lugares para «$query»"
                 } else {
-                    val place = places.getJSONObject(0)
-                    forecastLat = place.optDouble("latitude").toString()
-                    forecastLon = place.optDouble("longitude").toString()
-                    forecastPlaceName = listOf(place.optString("name"), place.optString("admin1"), place.optString("country")).filter { it.isNotBlank() }.distinct().joinToString(", ")
-                    prefs.edit().putString("forecastLat", forecastLat).putString("forecastLon", forecastLon).putString("forecastPlaceName", forecastPlaceName).apply()
-                    status = "Ubicación seleccionada · $forecastPlaceName"
-                    refreshForecast()
+                    forecastSearchResults = (0 until places.length()).mapNotNull { i ->
+                        val place = places.optJSONObject(i) ?: return@mapNotNull null
+                        ForecastPlace(place.optString("name"), place.optDouble("latitude"), place.optDouble("longitude"), place.optString("admin1"), place.optString("country"))
+                    }
+                    status = "Selecciona el lugar correcto entre los resultados."
                 }
             } catch (e: Exception) { status = "No se pudo buscar el lugar: ${e.message}" }
             loading = false
