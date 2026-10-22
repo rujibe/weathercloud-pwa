@@ -173,11 +173,15 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     arrayOf("tempin","Temperatura interior","°C","🏠"), arrayOf("humin","Humedad interior","%","🏡")
                 )
                 readings = fields.mapNotNull { f ->
-                    val raw = if (f[0] == "gust") result.opt("gust").takeUnless { it == null || it == JSONObject.NULL } ?: result.opt("wgust").takeUnless { it == null || it == JSONObject.NULL } ?: result.opt("wind_gust").takeUnless { it == null || it == JSONObject.NULL } else result.opt(f[0])
+                    val raw = when (f[0]) {
+                        "gust" -> listOf("gust", "wgust", "wind_gust", "windgust", "windGust", "wind_gusts_10m", "gustspeed", "wind_gust_speed").firstNotNullOfOrNull { key -> result.opt(key).takeUnless { it == null || it == JSONObject.NULL || it.toString().isBlank() } }
+                        "wdir" -> listOf("wdir", "winddir", "wind_dir", "wind_direction", "windDirection", "winddirection").firstNotNullOfOrNull { key -> result.opt(key).takeUnless { it == null || it == JSONObject.NULL || it.toString().isBlank() } }
+                        else -> result.opt(f[0])
+                    }
                     if (raw == null || raw == JSONObject.NULL || raw.toString().isBlank()) null
                     else {
                         val numeric = raw.toString().toDoubleOrNull()
-                        val display = if (f[0] == "wdir" && numeric != null) formatWindDirection(numeric) else numeric?.let { String.format(Locale.getDefault(), "%.1f", it) } ?: raw.toString()
+                        val display = if (f[0] == "wdir") formatWindDirection(raw.toString()) else numeric?.let { String.format(Locale.getDefault(), "%.1f", it) } ?: raw.toString()
                         Reading(f[0], f[1], display, if (f[0] == "wdir") "" else f[2], f[3])
                     }
                 }
@@ -336,7 +340,9 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                         val h = kotlin.math.sin(dLat / 2).let { it * it } + kotlin.math.cos(Math.toRadians(lat)) * kotlin.math.cos(Math.toRadians(lat2)) * kotlin.math.sin(dLon / 2).let { it * it }
                         val distance = 6371.0 * 2 * kotlin.math.atan2(kotlin.math.sqrt(h), kotlin.math.sqrt((1 - h).coerceAtLeast(0.0)))
                         val update = if (item.has("update")) item.optDouble("update", Double.NaN).takeIf { it.isFinite() }?.div(60)?.toInt() else null
-                        NearbyStation(item.optString("name", item.optString("city", "Estación " + id)), id, item.optString("city", ""), distance, update)
+                        val city = listOf("city", "locality", "town", "municipality", "place", "location", "region").firstNotNullOfOrNull { key -> item.optString(key).trim().takeIf { it.isNotBlank() && !it.equals("null", true) } }.orEmpty()
+                        val stationName = listOf("name", "device_name", "title").firstNotNullOfOrNull { key -> item.optString(key).trim().takeIf { it.isNotBlank() && !it.equals("null", true) } } ?: "Estación " + id
+                        NearbyStation(stationName, id, city, distance, update)
                     }
                 }.sortedBy { it.distanceKm }.take(30)
                 nearbyResults = parsed
@@ -1460,8 +1466,33 @@ private fun reverseGeocode(latitude: Double, longitude: Double): String {
     } catch (_: Exception) { "Mi ubicación" }
 }
 
-private fun formatWindDirection(degrees: Double): String {
-    val normalized = ((degrees % 360.0) + 360.0) % 360.0
+private fun formatWindDirection(value: String): String {
+    val raw = value.trim()
+    val numeric = raw.toDoubleOrNull()
+    if (numeric == null) {
+        val token = raw.uppercase(Locale.ROOT).replace(" ", "").replace("-", "")
+        val cardinal = when (token) {
+            "N", "NORTH", "NORTE" -> "Norte"
+            "NNE", "NORTHNORTHEAST" -> "Nornoreste"
+            "NE", "ENE", "NORTHEAST" -> "Noreste"
+            "ENE", "EASTNORTHEAST" -> "Estenoreste"
+            "E", "EAST", "ESTE" -> "Este"
+            "ESE", "EASTSOUTHEAST" -> "Estesureste"
+            "SE", "SOUTHEAST", "SURESTE" -> "Sureste"
+            "SSE", "SOUTHSOUTHEAST" -> "Sursureste"
+            "S", "SOUTH", "SUR" -> "Sur"
+            "SSW", "SOUTHSOUTHWEST" -> "Sursuroeste"
+            "SW", "SOUTHWEST", "SUROESTE" -> "Suroeste"
+            "WSW", "WESTSOUTHWEST" -> "Oestesuroeste"
+            "W", "WEST", "OESTE" -> "Oeste"
+            "WNW", "WESTNORTHWEST" -> "Oestenoroeste"
+            "NW", "NORTHWEST", "NOROESTE" -> "Noroeste"
+            "NNW", "NORTHNORTHWEST" -> "Nornoroeste"
+            else -> raw
+        }
+        return cardinal
+    }
+    val normalized = ((numeric % 360.0) + 360.0) % 360.0
     val directions = listOf("Norte", "Nornoreste", "Noreste", "Estenoreste", "Este", "Estesureste", "Sureste", "Sursureste", "Sur", "Sursuroeste", "Suroeste", "Oestesuroeste", "Oeste", "Oestenoroeste", "Noroeste", "Nornoroeste")
     val index = kotlin.math.floor((normalized + 11.25) / 22.5).toInt() % 16
     return "${directions[index]} (${normalized.toInt()}°)"
