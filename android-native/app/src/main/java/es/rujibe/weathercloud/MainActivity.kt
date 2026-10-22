@@ -382,6 +382,63 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     }
                     if (forecast.isEmpty()) item { Text("Busca una ciudad o lugar para consultar la previsión y sus próximas horas.", color = muted) }
                 }
+                "Análisis" -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    item {
+                        Surface(color = card, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(20.dp))) {
+                            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Text("Análisis por estación", color = fg, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                                Text("Comparador estadístico · estaciones guardadas", color = muted, fontSize = 13.sp)
+                                Text("Variable de comparación", color = muted, fontSize = 12.sp)
+                                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    listOf("temp" to "Temperatura", "hum" to "Humedad", "bar" to "Presión", "wspd" to "Viento", "gust" to "Rachas", "rain" to "Lluvia").forEach { pair ->
+                                        FilterChip(selected = analysisVariable == pair.first, onClick = { analysisVariable = pair.first }, label = { Text(pair.second) })
+                                    }
+                                }
+                                Button(onClick = { refreshAnalysis() }, enabled = !loading, colors = ButtonDefaults.buttonColors(containerColor = accentColor), modifier = Modifier.fillMaxWidth()) {
+                                    Text(if (loading) "Consultando…" else "Comparar estaciones", color = Navy)
+                                }
+                                Text(analysisMessage, color = muted, fontSize = 12.sp)
+                            }
+                        }
+                    }
+                    if (analysisResults.isNotEmpty()) {
+                        val valid = analysisResults.filter { it.value != null }
+                        if (valid.isNotEmpty()) {
+                            item {
+                                val values = valid.map { it.value!! }
+                                Surface(color = card, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(18.dp))) {
+                                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                        Text("Resumen comparativo", color = fg, fontWeight = FontWeight.SemiBold)
+                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            listOf("Mínimo" to values.minOrNull()!!, "Media" to values.average(), "Máximo" to values.maxOrNull()!!).forEach { pair ->
+                                                Surface(color = bg, shape = RoundedCornerShape(12.dp), modifier = Modifier.weight(1f)) {
+                                                    Column(Modifier.padding(10.dp)) {
+                                                        Text(pair.first, color = muted, fontSize = 11.sp)
+                                                        Text(String.format(Locale.getDefault(), "%.1f %s", pair.second, valid.first().unit), color = fg, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        Text("Las estaciones se comparan usando la última lectura disponible, no un promedio histórico.", color = muted, fontSize = 11.sp)
+                                    }
+                                }
+                            }
+                        }
+                        items(analysisResults) { item ->
+                            Surface(color = card, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(16.dp))) {
+                                Row(Modifier.padding(15.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text(item.station.name, color = fg, fontWeight = FontWeight.SemiBold)
+                                        Text("ID ${item.station.id}", color = muted, fontSize = 11.sp)
+                                    }
+                                    Text(if (item.value != null) String.format(Locale.getDefault(), "%.1f %s", item.value, item.unit) else item.error.ifBlank { "Sin datos" }, color = if (item.value != null) accentColor else muted, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    } else {
+                        item { Text("Pulsa «Comparar estaciones» para consultar las estaciones que tienes guardadas.", color = muted) }
+                    }
+                }
                 else -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     item {
                         Surface(color = card, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
