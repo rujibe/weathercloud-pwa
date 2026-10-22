@@ -798,7 +798,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                     }
                                     if (selectedHistoryIndex in history.indices) {
                                         val point = history[selectedHistoryIndex]
-                                        Text("Punto seleccionado · " + point.first + " · " + String.format(Locale.getDefault(), "%.2f", point.second) + " " + unit, color = accentColor, fontSize = 12.sp)
+                                        Text("Punto seleccionado · " + point.first + " · " + String.format(Locale.getDefault(), "%.2f", point.second) + " " + (when (historyVariable) { "temp" -> "°C"; "hum" -> "%"; "bar" -> "hPa"; "wspd", "gust" -> "km/h"; "rain" -> "mm"; else -> "" }), color = accentColor, fontSize = 12.sp)
                                     }
                                     val historyUnit = when (historyVariable) { "temp" -> "°C"; "hum" -> "%"; "bar" -> "hPa"; "wspd", "gust" -> "km/h"; "rain" -> "mm"; else -> "" }
                                     Text("Mín. ${String.format(Locale.getDefault(), "%.1f", min)} $historyUnit · Máx. ${String.format(Locale.getDefault(), "%.1f", max)} $historyUnit", color = muted)
