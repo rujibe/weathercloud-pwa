@@ -518,7 +518,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                 val tomorrowStart = java.time.LocalDate.now(zone).plusDays(1).atStartOfDay(zone).toEpochSecond()
                 val todayPoints = points.filter { it.first >= todayStart && it.first < tomorrowStart }
                 val values = todayPoints.flatMap { listOf(it.second, it.third) }.filter { it.isFinite() }
-                todayTemperatureValues = if (values.isNotEmpty()) values else emptyList()
+                todayTemperatureValues = if (todayPoints.size >= 2 || todayPoints.any { it.second != it.third }) values else emptyList()
             } catch (_: Exception) { todayTemperatureValues = emptyList() }
         }
     }
