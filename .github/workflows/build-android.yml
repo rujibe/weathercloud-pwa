@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - "android-native/**"
+      - "index.html"
       - ".github/workflows/build-android.yml"
 
 permissions:
