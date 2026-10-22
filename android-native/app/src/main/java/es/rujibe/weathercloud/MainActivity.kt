@@ -81,7 +81,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     var historyPeriod by remember { mutableStateOf("week") }
     var analysisVariable by remember { mutableStateOf("temp") }
     var analysisResults by remember { mutableStateOf<List<StationAnalysis>>(emptyList()) }
-    var analysisSelectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var analysisSelectedIds by remember { mutableStateOf<Set<String>>(stations.map { it.id }.toSet()) }
     var analysisMessage by remember { mutableStateOf("Selecciona las estaciones guardadas para comparar sus condiciones.") }
     var status by remember { mutableStateOf("Listo para consultar la estación") }
     var loading by remember { mutableStateOf(false) }
@@ -191,7 +191,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
         }
     }
     fun refreshAnalysis() {
-        val selectedStations = stations.filter { analysisSelectedIds.isEmpty() || analysisSelectedIds.contains(it.id) }
+        val selectedStations = stations.filter { analysisSelectedIds.contains(it.id) }
         if (selectedStations.size < 2) { analysisMessage = "Selecciona al menos dos estaciones para comparar."; return }
         if (selectedStations.size > 8) { analysisMessage = "Selecciona un máximo de ocho estaciones cada vez."; return }
         loading = true
@@ -394,7 +394,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                 Text("Estaciones que quieres comparar", color = muted, fontSize = 12.sp)
                                 stations.forEach { station ->
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Checkbox(checked = analysisSelectedIds.isEmpty() || analysisSelectedIds.contains(station.id), onCheckedChange = { checked ->
+                                        Checkbox(checked = analysisSelectedIds.contains(station.id), onCheckedChange = { checked ->
                                             analysisSelectedIds = if (checked) analysisSelectedIds + station.id else analysisSelectedIds - station.id
                                         })
                                         Column(Modifier.weight(1f)) {
