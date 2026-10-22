@@ -531,39 +531,63 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                 "Estación" -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     item {
                         val heroShape = RoundedCornerShape(28.dp)
+                        val heroTemp = readings.firstOrNull { it.key == "temp" }
+                        val heroHeat = readings.firstOrNull { it.key == "heat" || it.key == "dew" }
+                        val todayValues = history.filter { it.second.isFinite() }.map { it.second }
+                        val heroMax = if (historyVariable == "temp" && historyPeriod == "day" && todayValues.isNotEmpty()) String.format(Locale.getDefault(), "%.1f °C", todayValues.maxOrNull()) else "—"
+                        val heroMin = if (historyVariable == "temp" && historyPeriod == "day" && todayValues.isNotEmpty()) String.format(Locale.getDefault(), "%.1f °C", todayValues.minOrNull()) else "—"
                         Box(Modifier.fillMaxWidth().clip(heroShape).background(Brush.linearGradient(if (light) listOf(Color(0xFFD8F0FF), Color(0xFFB9D5F4), Color(0xFFDCE6FA)) else listOf(Color(0xFF17466B), Color(0xFF183650), Color(0xFF24375C)))).border(1.dp, if (light) Color(0xFFB4D4E9) else Color(0xFF3B6485), heroShape)) {
-                            Column(Modifier.padding(24.dp)) {
+                            Column(Modifier.padding(if (density == "compact") 18.dp else 24.dp), verticalArrangement = Arrangement.spacedBy(15.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Text("●", color = if (readings.isNotEmpty()) Color(0xFF65E0AE) else muted, fontSize = 10.sp)
-                                    Text(if (readings.isNotEmpty()) "ESTACIÓN CONECTADA" else "PANEL METEOROLÓGICO", color = if (light) Color(0xFF315D7B) else Color(0xFFB9F6DC), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.1.sp)
+                                    Box(Modifier.size(8.dp).clip(RoundedCornerShape(50)).background(if (readings.isNotEmpty()) Color(0xFF65E0AE) else Muted))
+                                    Text(if (readings.isNotEmpty()) "ESTACIÓN CONECTADA" else "PANEL METEOROLÓGICO", color = if (light) Color(0xFF315D7B) else Color(0xFFC1EAFF), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
                                 }
-                                Spacer(Modifier.height(14.dp))
-                                Box {
-                                    TextButton(onClick = { stationMenuExpanded = true }, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)) {
-                                        Text("▾  " + (stations.firstOrNull { it.id == selectedId }?.name ?: "Mi estación"), color = if (light) Color(0xFF14243A) else TextMain, fontSize = 16.sp, fontWeight = FontWeight.Medium)
-                                    }
-                                    DropdownMenu(expanded = stationMenuExpanded, onDismissRequest = { stationMenuExpanded = false }) {
-                                        stations.forEach { station ->
-                                            DropdownMenuItem(text = { Text(station.name) }, onClick = {
-                                                selectedId = station.id
-                                                persistStations()
-                                                stationMenuExpanded = false
-                                                refreshCurrent()
-                                            })
+                                Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                                    Column(Modifier.weight(1.1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                        Text("AHORA EN", color = if (light) Color(0xFF315D7B) else Color(0xFFC1EAFF), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.7.sp)
+                                        Box {
+                                            TextButton(onClick = { stationMenuExpanded = true }, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)) {
+                                                Text("⌄  " + (stations.firstOrNull { it.id == selectedId }?.name ?: "Mi estación"), color = if (light) Color(0xFF14243A) else TextMain, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
+                                            }
+                                            DropdownMenu(expanded = stationMenuExpanded, onDismissRequest = { stationMenuExpanded = false }) {
+                                                stations.forEach { station ->
+                                                    DropdownMenuItem(text = { Text(station.name) }, onClick = {
+                                                        selectedId = station.id
+                                                        persistStations()
+                                                        stationMenuExpanded = false
+                                                        refreshCurrent()
+                                                    })
+                                                }
+                                                DropdownMenuItem(text = { Text("Gestionar mis estaciones") }, onClick = { stationMenuExpanded = false; showStations = true })
+                                            }
                                         }
-                                        DropdownMenuItem(text = { Text("Gestionar mis estaciones") }, onClick = { stationMenuExpanded = false; showStations = true })
+                                        Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                                            Text(heroTemp?.value ?: "—", color = if (light) Color(0xFF14243A) else TextMain, fontSize = (76 * scale).sp, fontWeight = FontWeight.Light, letterSpacing = (-6).sp, lineHeight = (80 * scale).sp)
+                                            Text("°C", Modifier.padding(top = 10.dp), color = if (light) Color(0xFF315D7B) else Blue, fontSize = 30.sp, fontWeight = FontWeight.Light)
+                                        }
+                                        Text("Condiciones meteorológicas actuales", color = if (light) Color(0xFF52677D) else Color(0xFFD5E8F4), fontSize = 13.sp)
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            Button(onClick = { refreshCurrent() }, colors = ButtonDefaults.buttonColors(containerColor = if (light) Color(0xFF142F4A) else Color(0xFFC4F0FF)), shape = RoundedCornerShape(13.dp)) {
+                                                Text("↻ Actualizar", color = if (light) Color.White else Color(0xFF10283B), fontWeight = FontWeight.Bold)
+                                            }
+                                            Text(status.take(42), color = if (light) Color(0xFF315D7B) else Color(0xFFD8EAFF), fontSize = 10.sp, maxLines = 2)
+                                        }
                                     }
-                                }
-                                val temp = readings.firstOrNull { it.key == "temp" }
-                                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Text(if (temp != null) temp.value else "—", color = if (light) Color(0xFF14243A) else TextMain, fontSize = (58 * scale).sp, fontWeight = FontWeight.Bold, letterSpacing = (-2).sp)
-                                    Text("°C", Modifier.padding(bottom = 9.dp), color = if (light) Color(0xFF315D7B) else Blue, fontSize = 22.sp, fontWeight = FontWeight.Medium)
-                                }
-                                Text("Condiciones meteorológicas actuales", color = if (light) Color(0xFF52677D) else Color(0xFFBCD0E4), fontSize = 13.sp)
-                                Spacer(Modifier.height(18.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(9.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Button(onClick = { refreshCurrent() }, colors = ButtonDefaults.buttonColors(containerColor = if (light) Color(0xFF142F4A) else accentColor), shape = RoundedCornerShape(13.dp)) { Text("↻  Actualizar", color = if (light) Color.White else Navy) }
-                                    OutlinedButton(onClick = { showStations = true }, shape = RoundedCornerShape(13.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = if (light) Color(0xFF14243A) else TextMain)) { Text("Mis estaciones") }
+                                    Column(Modifier.weight(0.9f), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                                        listOf(
+                                            "Sensación térmica" to (heroHeat?.let { it.value + " " + it.unit } ?: "—"),
+                                            "Máxima hoy" to heroMax,
+                                            "Mínima hoy" to heroMin,
+                                            "Estación" to if (readings.isNotEmpty()) "Conectada" else "Sin lectura"
+                                        ).forEach { stat ->
+                                            Surface(color = Color(0x2607192B), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth().border(1.dp, Color(0x24FFFFFF), RoundedCornerShape(16.dp))) {
+                                                Column(Modifier.padding(11.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                    Text(stat.first, color = if (light) Color(0xFF52677D) else Color(0xFFC3D8E8), fontSize = 10.sp)
+                                                    Text(stat.second, color = if (light) Color(0xFF14243A) else TextMain, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -666,15 +690,47 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                             }
                                         }
                                     }
-                                    Canvas(Modifier.fillMaxWidth().height(145.dp).pointerInput(history) {
+                                    val chartValues = values
+                                    val chartMin = minValue
+                                    val chartMax = maxValue
+                                    val chartSpan = (chartMax - chartMin).coerceAtLeast(0.1)
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Text(String.format(Locale.getDefault(), "%.1f", chartMax), color = muted, fontSize = 10.sp)
+                                        Text(String.format(Locale.getDefault(), "%.1f %s", chartMin, historyUnit), color = muted, fontSize = 10.sp)
+                                    }
+                                    Canvas(Modifier.fillMaxWidth().height(190.dp).pointerInput(history) {
                                         detectTapGestures { offset ->
-                                            if (history.isNotEmpty()) selectedHistoryIndex = if (history.size == 1) 0 else ((offset.x / size.width) * (history.size - 1)).toInt().coerceIn(0, history.lastIndex)
+                                            if (history.isNotEmpty()) selectedHistoryIndex = if (history.size == 1) 0 else ((offset.x / size.width) * history.size).toInt().coerceIn(0, history.lastIndex)
                                         }
                                     }) {
-                                        val span = (maxValue - minValue).coerceAtLeast(0.1)
-                                        val points = values.mapIndexed { i, value -> androidx.compose.ui.geometry.Offset(if (values.size == 1) 0f else i * size.width / (values.size - 1), size.height - ((value - minValue) / span * (size.height - 12f)).toFloat() - 6f) }
-                                        for (i in 0 until points.lastIndex) drawLine(accentColor, points[i], points[i + 1], strokeWidth = 3f, cap = StrokeCap.Round)
-                                        if (selectedHistoryIndex in points.indices) drawCircle(accentColor, radius = 6f, center = points[selectedHistoryIndex])
+                                        val leftPad = 4f
+                                        val rightPad = 4f
+                                        val topPad = 10f
+                                        val bottomPad = 8f
+                                        val plotHeight = size.height - topPad - bottomPad
+                                        val plotWidth = size.width - leftPad - rightPad
+                                        for (line in 0..4) {
+                                            val y = topPad + plotHeight * line / 4f
+                                            drawLine(color = if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), start = androidx.compose.ui.geometry.Offset(leftPad, y), end = androidx.compose.ui.geometry.Offset(size.width - rightPad, y), strokeWidth = 1f)
+                                        }
+                                        val slot = plotWidth / chartValues.size.coerceAtLeast(1)
+                                        val barWidth = (slot * 0.62f).coerceIn(2f, 22f)
+                                        chartValues.forEachIndexed { index, value ->
+                                            val barHeight = (((value - chartMin) / chartSpan) * (plotHeight - 5f)).toFloat().coerceAtLeast(2f)
+                                            val x = leftPad + slot * index + (slot - barWidth) / 2f
+                                            val y = topPad + plotHeight - barHeight
+                                            drawRoundRect(
+                                                brush = Brush.verticalGradient(if (index == selectedHistoryIndex) listOf(Color(0xFFB9F1FF), accentColor) else listOf(accentColor.copy(alpha = 0.88f), accentColor.copy(alpha = 0.35f)), startY = y, endY = topPad + plotHeight),
+                                                topLeft = androidx.compose.ui.geometry.Offset(x, y),
+                                                size = androidx.compose.ui.geometry.Size(barWidth, barHeight),
+                                                cornerRadius = androidx.compose.ui.geometry.CornerRadius(barWidth / 2f, barWidth / 2f)
+                                            )
+                                        }
+                                    }
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Text(history.firstOrNull()?.first?.take(16) ?: "", color = muted, fontSize = 9.sp, maxLines = 1)
+                                        Text(history.getOrNull(history.size / 2)?.first?.take(16) ?: "", color = muted, fontSize = 9.sp, maxLines = 1)
+                                        Text(history.lastOrNull()?.first?.take(16) ?: "", color = muted, fontSize = 9.sp, maxLines = 1)
                                     }
                                     if (selectedHistoryIndex in history.indices) {
                                         val point = history[selectedHistoryIndex]
