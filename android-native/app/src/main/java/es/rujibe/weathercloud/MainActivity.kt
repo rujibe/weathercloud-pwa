@@ -1305,6 +1305,7 @@ private fun httpGet(url: String): String {
     connection.connectTimeout = 12000
     connection.readTimeout = 16000
     connection.requestMethod = "GET"
+    connection.setRequestProperty("User-Agent", "MiTiempoAndroid/1.0 (Weathercloud)")
     return try {
         val code = connection.responseCode
         val stream = if (code in 200..299) connection.inputStream else connection.errorStream
