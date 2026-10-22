@@ -65,7 +65,7 @@ class MainActivity : ComponentActivity() {
 
 data class Station(val name: String, val id: String)
 data class Reading(val key: String, val label: String, val value: String, val unit: String, val icon: String)
-data class StationAnalysis(val station: Station, val value: Double?, val unit: String, val label: String, val error: String = "")
+data class StationAnalysis(val station: Station, val value: Double?, val unit: String, val label: String, val error: String = "", val observations: Int = 0, val variables: Int = 0)
 data class ValidationMetric(val label: String, val score: Double?, val mae: Double?, val count: Int, val unit: String)
 data class StationValidationResult(val station: Station, val place: String, val overall: Double?, val coverage: Int, val metrics: List<ValidationMetric>, val error: String = "")
 data class NearbyStation(val name: String, val id: String, val city: String, val distanceKm: Double, val updateMinutes: Int?)
@@ -347,38 +347,50 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
         val selectedStations = stations.filter { analysisSelectedIds.contains(it.id) }
         if (selectedStations.size < 2) { analysisMessage = "Selecciona al menos dos estaciones para comparar."; return }
         if (selectedStations.size > 8) { analysisMessage = "Selecciona un máximo de ocho estaciones cada vez."; return }
+        val base = apiBase.trim().trimEnd('/')
+        if (base.isBlank()) { analysisMessage = "Conecta el Worker de Cloudflare en Ajustes para comparar los históricos."; return }
         loading = true
-        analysisMessage = "Consultando las estaciones guardadas…"
+        analysisMessage = "Consultando el histórico mensual de las estaciones seleccionadas…"
         scope.launch {
-            val base = apiBase.trim().trimEnd('/')
-            val metadata = mapOf(
+            val metadata = listOf(
                 "temp" to ("Temperatura" to "°C"), "hum" to ("Humedad" to "%"),
                 "bar" to ("Presión" to "hPa"), "wspd" to ("Viento" to "km/h"),
-                "gust" to ("Rachas" to "km/h"), "rain" to ("Lluvia" to "mm")
+                "gust" to ("Rachas" to "km/h"), "rain" to ("Lluvia" to "mm"),
+                "rainrate" to ("Intensidad de lluvia" to "mm/h"), "solar" to ("Radiación solar" to "W/m²"),
+                "uvi" to ("Índice UV" to "")
             )
-            val meta = metadata[analysisVariable] ?: ("Temperatura" to "°C")
+            val meta = metadata.firstOrNull { it.first == analysisVariable }?.second ?: ("Temperatura" to "°C")
             val results = mutableListOf<StationAnalysis>()
             for (station in selectedStations) {
                 try {
-                    val values = withContext(Dispatchers.IO) {
-                        if (base.isNotBlank()) {
-                            JSONObject(httpGet(base + "/api/current?station_id=" + enc(station.id)))
-                        } else {
-                            val all = JSONObject(httpGet("https://rujibe.github.io/weathercloud-pwa/weather.json"))
-                            all.optJSONObject("stations")?.optJSONObject(station.id)?.optJSONObject("readings")
-                                ?: throw IllegalStateException("Sin datos publicados")
+                    val summary = withContext(Dispatchers.IO) {
+                        var total = 0
+                        var available = 0
+                        var selectedValues = emptyList<Double>()
+                        metadata.forEach { (key, _) ->
+                            val json = JSONObject(httpGet(base + "/api/history?station_id=" + enc(station.id) + "&variable=" + enc(key) + "&period=month"))
+                            val points = json.optJSONArray("points") ?: JSONArray()
+                            val values = (0 until points.length()).mapNotNull { i ->
+                                val point = points.optJSONObject(i) ?: return@mapNotNull null
+                                val value = point.optDouble("value", Double.NaN)
+                                if (value.isFinite()) value else null
+                            }
+                            total += values.size
+                            if (values.isNotEmpty()) available++
+                            if (key == analysisVariable) selectedValues = values
                         }
+                        Triple(total, available, selectedValues)
                     }
-                    val raw = values.opt(analysisVariable)
-                    val number = if (raw == null || raw == JSONObject.NULL) null else raw.toString().toDoubleOrNull()
-                    results.add(StationAnalysis(station, number, meta.second, meta.first, if (number == null) "Sin lectura" else ""))
+                    val values = summary.third
+                    val average = values.takeIf { it.isNotEmpty() }?.average()
+                    results.add(StationAnalysis(station, average, meta.second, meta.first, if (average == null) "Sin datos para esta variable" else "", summary.first, summary.second))
                 } catch (e: Exception) {
-                    results.add(StationAnalysis(station, null, meta.second, meta.first, "No disponible"))
+                    results.add(StationAnalysis(station, null, meta.second, meta.first, e.message ?: "No disponible"))
                 }
             }
-            analysisResults = results
+            analysisResults = results.sortedByDescending { it.observations }
             val count = results.count { it.value != null }
-            analysisMessage = count.toString() + " de " + results.size + " estaciones con datos para " + meta.first.lowercase(Locale.getDefault()) + "."
+            analysisMessage = count.toString() + " de " + results.size + " estaciones con datos para " + meta.first.lowercase(Locale.getDefault()) + "; ordenadas por cobertura histórica."
             loading = false
         }
     }
@@ -843,7 +855,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                                 }
                                             }
                                         }
-                                        Text("Las estaciones se comparan usando la última lectura disponible, no un promedio histórico.", color = muted, fontSize = 11.sp)
+                                        Text("Las cifras muestran la media mensual de la variable elegida. El ranking se ordena por número total de observaciones históricas recuperadas, no por precisión meteorológica.", color = muted, fontSize = 11.sp)
                                     }
                                 }
                             }
@@ -853,7 +865,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                 Row(Modifier.padding(15.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                     Column(Modifier.weight(1f)) {
                                         Text(item.station.name, color = fg, fontWeight = FontWeight.SemiBold)
-                                        Text("ID ${item.station.id}", color = muted, fontSize = 11.sp)
+                                        Text("ID ${item.station.id} · ${item.observations} observaciones · ${item.variables}/9 variables", color = muted, fontSize = 11.sp)
                                     }
                                     Text(if (item.value != null) String.format(Locale.getDefault(), "%.1f %s", item.value, item.unit) else item.error.ifBlank { "Sin datos" }, color = if (item.value != null) accentColor else muted, fontWeight = FontWeight.Bold)
                                 }
