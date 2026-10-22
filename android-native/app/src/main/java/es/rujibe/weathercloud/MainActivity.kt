@@ -154,7 +154,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     arrayOf("bar","Presión","hPa","🧭"), arrayOf("wspd","Viento","km/h","💨"),
                     arrayOf("gust","Racha","km/h","🌬"), arrayOf("rain","Lluvia","mm","🌧"),
                     arrayOf("rainrate","Intensidad lluvia","mm/h","🌦"), arrayOf("wdir","Dirección viento","°","🧭"),
-                    arrayOf("solar","Radiación solar","W/m²","☀️"), arrayOf("uvi","Índice UV","","🕶"),
+                    arrayOf("solar","Radiación solar","W/m²","☀️"), arrayOf("uv","Índice UV","","🕶"),
                     arrayOf("dew","Punto de rocío","°C","❄️"), arrayOf("heat","Sensación térmica","°C","🌡"),
                     arrayOf("tempin","Temperatura interior","°C","🏠"), arrayOf("humin","Humedad interior","%","🏡")
                 )
@@ -360,7 +360,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                 "bar" to ("Presión" to "hPa"), "wspd" to ("Viento" to "km/h"),
                 "gust" to ("Rachas" to "km/h"), "rain" to ("Lluvia" to "mm"),
                 "rainrate" to ("Intensidad de lluvia" to "mm/h"), "solar" to ("Radiación solar" to "W/m²"),
-                "uvi" to ("Índice UV" to "")
+                "uv" to ("Índice UV" to "")
             )
             val meta = metadata.firstOrNull { it.first == analysisVariable }?.second ?: ("Temperatura" to "°C")
             val results = mutableListOf<StationAnalysis>()
@@ -829,7 +829,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                 }
                                 Text("Variable de comparación", color = muted, fontSize = 12.sp)
                                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    listOf("temp" to "Temperatura", "hum" to "Humedad", "bar" to "Presión", "wspd" to "Viento", "gust" to "Rachas", "rain" to "Lluvia", "rainrate" to "Intensidad de lluvia", "solar" to "Radiación solar", "uvi" to "Índice UV").forEach { pair ->
+                                    listOf("temp" to "Temperatura", "hum" to "Humedad", "bar" to "Presión", "wspd" to "Viento", "gust" to "Rachas", "rain" to "Lluvia", "rainrate" to "Intensidad de lluvia", "solar" to "Radiación solar", "uv" to "Índice UV").forEach { pair ->
                                         FilterChip(selected = analysisVariable == pair.first, onClick = { analysisVariable = pair.first }, label = { Text(pair.second) })
                                     }
                                 }
