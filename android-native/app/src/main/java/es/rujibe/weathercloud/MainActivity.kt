@@ -645,7 +645,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     Text("WEATHERCLOUD  ·  MI ESTACIÓN", color = accentColor, fontSize = (11 * scale).sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
                     Text(when(tab) { "Estación" -> "El tiempo en tu estación"; "Pronóstico" -> "Previsión para 7 días"; "Análisis" -> "Análisis por estación"; else -> tab }, color = fg, fontSize = (24 * scale).sp, fontWeight = FontWeight.Bold)
                 }
-                TextButton(onClick = { showSettings = true }) { Text("⚙ Ajustes", color = accentColor) }
+                TextButton(onClick = { showSettings = true }, modifier = Modifier.padding(top = 12.dp)) { Text("⚙ Ajustes", color = accentColor) }
             }
             Text(status, Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 4.dp), color = muted, fontSize = (12 * scale).sp)
             if (loading) LinearProgressIndicator(Modifier.fillMaxWidth(), color = accentColor)
@@ -922,7 +922,6 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     item {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Text("Previsión para 7 días", color = fg, fontWeight = FontWeight.Bold, fontSize = 24.sp, letterSpacing = (-0.4).sp)
                                 Text("Busca un lugar o consulta el tiempo en tu ubicación.", color = muted, fontSize = 13.sp)
                             }
                             Surface(color = card, shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(22.dp))) {
@@ -958,10 +957,6 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                                 }
                                             }
                                         }
-                                    }
-                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        OutlinedTextField(forecastLat, { forecastLat = it; prefs.edit().putString("forecastLat", it).apply() }, label = { Text("Latitud") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
-                                        OutlinedTextField(forecastLon, { forecastLon = it; prefs.edit().putString("forecastLon", it).apply() }, label = { Text("Longitud") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
                                     }
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Column(Modifier.weight(1f)) {
