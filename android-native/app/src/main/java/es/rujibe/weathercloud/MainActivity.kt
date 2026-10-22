@@ -15,6 +15,8 @@ import androidx.core.content.ContextCompat
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.border
@@ -96,6 +98,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     var forecastSearch by remember { mutableStateOf("") }
     var forecastPlaceName by remember { mutableStateOf(prefs.getString("forecastPlaceName", "Madrid, España") ?: "Madrid, España") }
     var history by remember { mutableStateOf<List<Pair<String, Double>>>(emptyList()) }
+    var selectedHistoryIndex by remember { mutableIntStateOf(-1) }
     var historyVariable by remember { mutableStateOf("temp") }
     var historyPeriod by remember { mutableStateOf("week") }
     var analysisVariable by remember { mutableStateOf("temp") }
@@ -370,6 +373,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     }
                     else -> points
                 }.takeLast(500)
+                selectedHistoryIndex = -1
                 status = "Histórico · ${history.size} puntos"
             } catch (e: Exception) { status = "No se pudo cargar el histórico: ${e.message}" }
             loading = false
@@ -716,10 +720,23 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                     val min = values.minOrNull() ?: 0.0
                                     val max = values.maxOrNull() ?: 1.0
                                     Spacer(Modifier.height(12.dp))
-                                    Canvas(Modifier.fillMaxWidth().height(180.dp)) {
+                                    Canvas(Modifier.fillMaxWidth().height(180.dp).pointerInput(history) {
+                                        detectTapGestures { offset ->
+                                            if (history.isNotEmpty()) selectedHistoryIndex = if (history.size == 1) 0 else ((offset.x / size.width) * (history.size - 1)).toInt().coerceIn(0, history.lastIndex)
+                                        }
+                                    }) {
                                         val span = (max - min).coerceAtLeast(0.1)
                                         val points = values.mapIndexed { i, v -> androidx.compose.ui.geometry.Offset(if (values.size == 1) 0f else i * size.width / (values.size - 1), size.height - ((v - min) / span * (size.height - 12f)).toFloat() - 6f) }
                                         for (i in 0 until points.lastIndex) drawLine(accentColor, points[i], points[i + 1], strokeWidth = 3f, cap = StrokeCap.Round)
+                                        if (selectedHistoryIndex in points.indices) {
+                                            val point = points[selectedHistoryIndex]
+                                            drawLine(accentColor.copy(alpha = 0.5f), androidx.compose.ui.geometry.Offset(point.x, 0f), androidx.compose.ui.geometry.Offset(point.x, size.height), strokeWidth = 1.5f)
+                                            drawCircle(accentColor, radius = 6f, center = point)
+                                        }
+                                    }
+                                    if (selectedHistoryIndex in history.indices) {
+                                        val point = history[selectedHistoryIndex]
+                                        Text("Punto seleccionado · " + point.first + " · " + String.format(Locale.getDefault(), "%.2f", point.second) + " " + unit, color = accentColor, fontSize = 12.sp)
                                     }
                                     val historyUnit = when (historyVariable) { "temp" -> "°C"; "hum" -> "%"; "bar" -> "hPa"; "wspd", "gust" -> "km/h"; "rain" -> "mm"; else -> "" }
                                     Text("Mín. ${String.format(Locale.getDefault(), "%.1f", min)} $historyUnit · Máx. ${String.format(Locale.getDefault(), "%.1f", max)} $historyUnit", color = muted)
