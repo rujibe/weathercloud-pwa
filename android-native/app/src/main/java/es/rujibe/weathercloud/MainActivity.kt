@@ -28,6 +28,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -69,12 +70,12 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-data class Station(val name: String, val id: String)
+data class Station(val name: String, val id: String, val city: String = "")
 data class Reading(val key: String, val label: String, val value: String, val unit: String, val icon: String)
 data class StationAnalysis(val station: Station, val value: Double?, val unit: String, val label: String, val error: String = "", val observations: Int = 0, val variables: Int = 0)
 data class ValidationMetric(val label: String, val score: Double?, val mae: Double?, val count: Int, val unit: String)
 data class StationValidationResult(val station: Station, val place: String, val overall: Double?, val coverage: Int, val metrics: List<ValidationMetric>, val error: String = "")
-data class NearbyStation(val name: String, val id: String, val city: String, val distanceKm: Double, val updateMinutes: Int?)
+data class NearbyStation(val name: String, val id: String, val city: String, val distanceKm: Double, val updateMinutes: Int?, val latitude: Double, val longitude: Double)
 data class ForecastDay(val date: String, val code: Int, val minimum: Int, val maximum: Int, val rainChance: Int, val rainMm: Double)
 data class ForecastHour(val time: String, val code: Int, val temperature: Double, val rainChance: Int, val rainMm: Double, val wind: Double, val gust: Double, val date: String = "", val isDay: Boolean = true)
 data class ForecastPlace(val name: String, val latitude: Double, val longitude: Double, val admin: String, val country: String)
@@ -99,6 +100,11 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     var stationMenuExpanded by remember { mutableStateOf(false) }
     var newName by remember { mutableStateOf("") }
     var newId by remember { mutableStateOf("") }
+    var newCity by remember { mutableStateOf("") }
+    var editingStationId by remember { mutableStateOf<String?>(null) }
+    var editingStationName by remember { mutableStateOf("") }
+    var editingStationCity by remember { mutableStateOf("") }
+    var nearbyListExpanded by remember { mutableStateOf(true) }
     var readings by remember { mutableStateOf<List<Reading>>(emptyList()) }
     var lastUpdatedAt by remember { mutableStateOf(prefs.getString("lastUpdatedAt", "") ?: "") }
     var historyUnitChoice by remember { mutableStateOf(prefs.getString("historyUnitChoice", "auto") ?: "auto") }
@@ -111,6 +117,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     var forecastSearch by remember { mutableStateOf("") }
     var forecastPlaceName by remember { mutableStateOf(prefs.getString("forecastPlaceName", "Madrid, España") ?: "Madrid, España") }
     var history by remember { mutableStateOf<List<Pair<String, Double>>>(emptyList()) }
+    var historyRainRate by remember { mutableStateOf<List<Pair<String, Double>>>(emptyList()) }
     var todayTemperatureValues by remember { mutableStateOf<List<Double>>(emptyList()) }
     var selectedHistoryIndex by remember { mutableIntStateOf(-1) }
     var historyVariable by remember { mutableStateOf("temp") }
@@ -139,9 +146,10 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     val fg = if (light) Color(0xFF14243A) else TextMain
     val muted = if (light) Color(0xFF52677D) else Muted
     val scale = if (font == "small") 0.9f else if (font == "large") 1.12f else 1f
+    val stationListState = rememberLazyListState()
 
     fun persistStations() {
-        prefs.edit().putString("stations", JSONArray().apply { stations.forEach { put(JSONObject().put("name", it.name).put("id", it.id)) } }.toString())
+        prefs.edit().putString("stations", JSONArray().apply { stations.forEach { put(JSONObject().put("name", it.name).put("id", it.id).put("city", it.city)) } }.toString())
             .putString("selectedId", selectedId).apply()
     }
     fun refreshCurrent() {
@@ -171,9 +179,34 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     arrayOf("tempin","Temperatura interior","°C","🏠"), arrayOf("humin","Humedad interior","%","🏡")
                 )
                 readings = fields.mapNotNull { f ->
-                    val raw = result.opt(f[0])
+                    val aliases = when (f[0]) {
+                        "temp" -> listOf("temp", "temperature", "temperature_outdoor", "temp_out", "tempout")
+                        "hum" -> listOf("hum", "humidity", "humidity_outdoor", "hum_out", "humout")
+                        "bar" -> listOf("bar", "pressure", "pressure_relative", "barometer", "barometric_pressure")
+                        "wspd" -> listOf("wspd", "wind_speed", "windspeed", "wind_speed_kph", "wind_kph")
+                        "gust" -> listOf("gust", "wgust", "wind_gust", "windgust", "windGust", "wind_gusts_10m", "gustspeed", "wind_gust_speed", "gust_kph")
+                        "rain" -> listOf("rain", "rain_daily", "rain_day", "rainfall", "precipitation")
+                        "rainrate" -> listOf("rainrate", "rain_rate", "rain_rate_mm", "rain_rate_mm_h")
+                        "wdir" -> listOf("wdir", "winddir", "wind_dir", "wind_direction", "windDirection", "winddirection", "wind_degree")
+                        "solar" -> listOf("solar", "solar_radiation", "solarradiation")
+                        "uv" -> listOf("uv", "uv_index", "uvindex")
+                        "dew" -> listOf("dew", "dew_point", "dewpoint")
+                        "heat" -> listOf("heat", "feels_like", "apparent_temperature", "heat_index")
+                        "tempin" -> listOf("tempin", "temperature_indoor", "temp_indoor", "temp_in")
+                        "humin" -> listOf("humin", "humidity_indoor", "hum_indoor", "hum_in")
+                        else -> listOf(f[0])
+                    }
+                    val raw = aliases.firstNotNullOfOrNull { key -> result.opt(key).takeUnless { it == null || it == JSONObject.NULL || it.toString().isBlank() } }
                     if (raw == null || raw == JSONObject.NULL || raw.toString().isBlank()) null
-                    else Reading(f[0], f[1], raw.toString().toDoubleOrNull()?.let { String.format(Locale.getDefault(), "%.1f", it) } ?: raw.toString(), f[2], f[3])
+                    else {
+                        val numeric = raw.toString().toDoubleOrNull()
+                        val display = if (f[0] == "wdir") {
+                            val degrees = numeric?.let { (((it % 360.0) + 360.0) % 360.0).toInt() }
+                            val abbreviated = abbreviateWindDirection(formatWindDirection(raw.toString()))
+                            if (degrees != null) "$degrees° $abbreviated" else abbreviated
+                        } else numeric?.let { String.format(Locale.getDefault(), "%.1f", it) } ?: raw.toString()
+                        Reading(f[0], f[1], display, if (f[0] == "wdir") "" else f[2], f[3])
+                    }
                 }
                 val trend = withContext(Dispatchers.IO) {
                     val historyBase = apiBase.trim().trimEnd('/')
@@ -330,7 +363,9 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                         val h = kotlin.math.sin(dLat / 2).let { it * it } + kotlin.math.cos(Math.toRadians(lat)) * kotlin.math.cos(Math.toRadians(lat2)) * kotlin.math.sin(dLon / 2).let { it * it }
                         val distance = 6371.0 * 2 * kotlin.math.atan2(kotlin.math.sqrt(h), kotlin.math.sqrt((1 - h).coerceAtLeast(0.0)))
                         val update = if (item.has("update")) item.optDouble("update", Double.NaN).takeIf { it.isFinite() }?.div(60)?.toInt() else null
-                        NearbyStation(item.optString("name", item.optString("city", "Estación " + id)), id, item.optString("city", ""), distance, update)
+                        val city = listOf("city", "locality", "town", "municipality", "place", "location", "region").firstNotNullOfOrNull { key -> item.optString(key).trim().takeIf { it.isNotBlank() && !it.equals("null", true) } }.orEmpty()
+                        val stationName = listOf("name", "device_name", "title").firstNotNullOfOrNull { key -> item.optString(key).trim().takeIf { it.isNotBlank() && !it.equals("null", true) } } ?: "Estación " + id
+                        NearbyStation(stationName, id, city, distance, update, lat2, lon2)
                     }
                 }.sortedBy { it.distanceKm }.take(30)
                 nearbyResults = parsed
@@ -592,6 +627,21 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     val v = p.optDouble("value", Double.NaN)
                     if (v.isNaN()) null else (p.optLong("time").toString() to v)
                 }
+                val rateJson = withContext(Dispatchers.IO) {
+                    if (base.isNotBlank()) JSONObject(httpGet("$base/api/history?station_id=${enc(station.id)}&variable=rainrate&period=${enc(if (historyPeriod == "yesterday") "week" else historyPeriod)}"))
+                    else JSONObject(httpGet("https://rujibe.github.io/weathercloud-pwa/history.json")).optJSONObject("stations")?.optJSONObject(station.id)?.optJSONObject("series") ?: JSONObject()
+                }
+                val rateArray = rateJson.optJSONArray("points") ?: rateJson.optJSONArray("rainrate") ?: JSONArray()
+                val ratePoints = (0 until rateArray.length()).mapNotNull { i ->
+                    val p = rateArray.optJSONObject(i) ?: return@mapNotNull null
+                    val v = p.optDouble("value", Double.NaN)
+                    if (v.isNaN()) null else (p.optLong("time").toString() to v)
+                }
+                historyRainRate = when (historyPeriod) {
+                    "day" -> { val zone = java.time.ZoneId.systemDefault(); val start = java.time.LocalDate.now(zone).atStartOfDay(zone).toEpochSecond(); val end = java.time.LocalDate.now(zone).plusDays(1).atStartOfDay(zone).toEpochSecond(); ratePoints.filter { it.first.toLongOrNull()?.let { t -> t >= start && t < end } == true } }
+                    "yesterday" -> { val zone = java.time.ZoneId.systemDefault(); val start = java.time.LocalDate.now(zone).minusDays(1).atStartOfDay(zone).toEpochSecond(); val end = java.time.LocalDate.now(zone).atStartOfDay(zone).toEpochSecond(); ratePoints.filter { it.first.toLongOrNull()?.let { t -> t >= start && t < end } == true } }
+                    else -> ratePoints
+                }.takeLast(500)
                 val now = System.currentTimeMillis() / 1000
                 history = when (historyPeriod) {
                     "day" -> {
@@ -650,7 +700,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
             Text(status, Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 4.dp), color = muted, fontSize = (12 * scale).sp)
             if (loading) LinearProgressIndicator(Modifier.fillMaxWidth(), color = accentColor)
             when (tab) {
-                "Estación" -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                "Estación" -> LazyColumn(state = stationListState, modifier = Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     item {
                         val heroShape = RoundedCornerShape(28.dp)
                         val heroTemp = readings.firstOrNull { it.key == "temp" }
@@ -668,12 +718,21 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                                         Text("AHORA EN", color = if (light) Color(0xFF315D7B) else Color(0xFFC1EAFF), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.7.sp)
                                         Box {
+                                            val activeStation = stations.firstOrNull { it.id == selectedId }
                                             TextButton(onClick = { stationMenuExpanded = true }, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)) {
-                                                Text("⌄  " + (stations.firstOrNull { it.id == selectedId }?.name ?: "Mi estación"), color = if (light) Color(0xFF14243A) else TextMain, fontSize = 22.sp, fontWeight = FontWeight.SemiBold, maxLines = 3)
+                                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                    Text("⌄  " + (activeStation?.name?.takeIf { it.isNotBlank() } ?: "Mi estación"), color = if (light) Color(0xFF14243A) else TextMain, fontSize = 22.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
+                                                    Text(activeStation?.city?.takeIf { it.isNotBlank() } ?: "Localidad no indicada", color = muted, fontSize = 14.sp, fontWeight = FontWeight.Normal, maxLines = 1)
+                                                }
                                             }
                                             DropdownMenu(expanded = stationMenuExpanded, onDismissRequest = { stationMenuExpanded = false }) {
                                                 stations.forEach { station ->
-                                                    DropdownMenuItem(text = { Text(station.name) }, onClick = {
+                                                    DropdownMenuItem(text = {
+                                                        Column {
+                                                            Text(station.name)
+                                                            if (station.city.isNotBlank()) Text(station.city, color = muted, fontSize = 12.sp)
+                                                        }
+                                                    }, onClick = {
                                                         selectedId = station.id
                                                         persistStations()
                                                         stationMenuExpanded = false
@@ -743,7 +802,15 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     items(readings.chunked(2)) { pair ->
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             pair.forEach { r ->
-                                Surface(color = card, shape = RoundedCornerShape(18.dp), modifier = Modifier.weight(1f).border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(18.dp))) {
+                                Surface(color = card, shape = RoundedCornerShape(18.dp), modifier = Modifier.weight(1f).border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(18.dp)).clickable(enabled = r.key != "heat" && r.key != "dew") {
+                                    val chartKey = r.key
+                                    val supported = setOf("temp", "hum", "bar", "wspd", "gust", "wdir", "rain", "rainrate", "solar", "uv", "tempin", "humin")
+                                    if (supported.contains(chartKey)) {
+                                        historyVariable = chartKey
+                                        historyUnitChoice = "auto"
+                                        scope.launch { refreshHistory(); delay(250); val chartIndex = 2 + maxOf(1, (readings.size + 1) / 2) + (if (nearby) 1 else 0); stationListState.animateScrollToItem(chartIndex) }
+                                    }
+                                }) {
                                     Column(Modifier.padding(if (density == "compact") 12.dp else 16.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                             Text("${r.icon}  ${r.label}", color = muted, fontSize = (12 * scale).sp, modifier = Modifier.weight(1f))
@@ -761,8 +828,13 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     if (nearby) item {
                         Surface(color = card, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(18.dp))) {
                             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                Text("Estaciones Weathercloud cercanas", color = fg, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                                Text("Busca estaciones públicas alrededor de la ubicación seleccionada en Previsión.", color = muted, fontSize = 12.sp)
+                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text("Estaciones Weathercloud cercanas", color = fg, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                        Text("Busca estaciones públicas alrededor de la ubicación seleccionada en Previsión.", color = muted, fontSize = 12.sp)
+                                    }
+                                    TextButton(onClick = { nearbyListExpanded = !nearbyListExpanded }) { Text(if (nearbyListExpanded) "Plegar ▴" else "Desplegar ▾") }
+                                }
                                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     listOf("5", "10", "25", "50").forEach { radius ->
                                         FilterChip(selected = nearbyRadius == radius, onClick = { nearbyRadius = radius }, label = { Text(radius + " km") })
@@ -770,7 +842,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                 }
                                 Button(onClick = { searchNearbyStations() }, enabled = !loading, colors = ButtonDefaults.buttonColors(containerColor = accentColor)) { Text("📡 Buscar estaciones", color = Navy) }
                                 Text(nearbyMessage, color = muted, fontSize = 12.sp)
-                                nearbyResults.forEach { station ->
+                                if (nearbyListExpanded) nearbyResults.forEach { station ->
                                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         Column(Modifier.weight(1f)) {
                                             Text(station.name, color = fg, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
@@ -780,10 +852,19 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                         }
                                         TextButton(onClick = {
                                             if (stations.none { it.id == station.id }) {
-                                                stations = stations + Station(station.name, station.id)
+                                                stations = stations + Station(station.name, station.id, station.city)
                                                 selectedId = station.id
                                                 persistStations()
                                                 refreshCurrent()
+                                                if (station.city.isBlank()) {
+                                                    scope.launch {
+                                                        val resolvedCity = withContext(Dispatchers.IO) { reverseGeocode(station.latitude, station.longitude) }
+                                                        if (resolvedCity.isNotBlank() && resolvedCity != "Mi ubicación") {
+                                                            stations = stations.map { if (it.id == station.id) it.copy(city = resolvedCity) else it }
+                                                            persistStations()
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }, enabled = stations.none { it.id == station.id }) { Text(if (stations.any { it.id == station.id }) "Ya añadida" else "＋ Añadir") }
                                     }
@@ -797,14 +878,42 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 Text("Histórico meteorológico", color = fg, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                                 Text("Evolución de la estación seleccionada", color = muted, fontSize = 12.sp)
-                                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    listOf("temp" to "Temperatura", "hum" to "Humedad", "bar" to "Presión", "wspd" to "Viento", "rain" to "Lluvia", "gust" to "Rachas").forEach { (key, label) ->
-                                        FilterChip(selected = historyVariable == key, onClick = { historyVariable = key; historyUnitChoice = "auto"; prefs.edit().putString("historyUnitChoice", "auto").apply(); refreshHistory() }, label = { Text(label) })
+                                val graphVariables = listOf("temp" to "Temperatura", "hum" to "Humedad", "bar" to "Presión", "wspd" to "Viento", "gust" to "Rachas", "wdir" to "Dirección viento", "rain" to "Lluvia", "rainrate" to "Intensidad lluvia", "solar" to "Radiación solar", "uv" to "Índice UV", "tempin" to "Temperatura interior", "humin" to "Humedad interior")
+                                val graphPeriods = listOf("day" to "Hoy", "yesterday" to "Ayer", "week" to "7 días", "month" to "30 días")
+                                var graphVariableMenuExpanded by remember { mutableStateOf(false) }
+                                var graphPeriodMenuExpanded by remember { mutableStateOf(false) }
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text("Parámetro", color = muted, fontSize = 12.sp)
+                                        Box {
+                                            OutlinedButton(onClick = { graphVariableMenuExpanded = true }, modifier = Modifier.fillMaxWidth()) {
+                                                Text("⌄  " + (graphVariables.firstOrNull { it.first == historyVariable }?.second ?: "Temperatura"), maxLines = 1)
+                                            }
+                                            DropdownMenu(expanded = graphVariableMenuExpanded, onDismissRequest = { graphVariableMenuExpanded = false }) {
+                                                graphVariables.forEach { (key, label) -> DropdownMenuItem(text = { Text(label) }, onClick = {
+                                                    historyVariable = key
+                                                    historyUnitChoice = "auto"
+                                                    prefs.edit().putString("historyUnitChoice", "auto").apply()
+                                                    graphVariableMenuExpanded = false
+                                                    refreshHistory()
+                                                }) }
+                                            }
+                                        }
                                     }
-                                }
-                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    listOf("day" to "Hoy", "yesterday" to "Ayer", "week" to "7 días", "month" to "30 días").forEach { (key, label) ->
-                                        FilterChip(selected = historyPeriod == key, onClick = { historyPeriod = key; refreshHistory() }, label = { Text(label) })
+                                    Column(Modifier.weight(1f)) {
+                                        Text("Periodo", color = muted, fontSize = 12.sp)
+                                        Box {
+                                            OutlinedButton(onClick = { graphPeriodMenuExpanded = true }, modifier = Modifier.fillMaxWidth()) {
+                                                Text("⌄  " + (graphPeriods.firstOrNull { it.first == historyPeriod }?.second ?: "7 días"), maxLines = 1)
+                                            }
+                                            DropdownMenu(expanded = graphPeriodMenuExpanded, onDismissRequest = { graphPeriodMenuExpanded = false }) {
+                                                graphPeriods.forEach { (key, label) -> DropdownMenuItem(text = { Text(label) }, onClick = {
+                                                    historyPeriod = key
+                                                    graphPeriodMenuExpanded = false
+                                                    refreshHistory()
+                                                }) }
+                                            }
+                                        }
                                     }
                                 }
                                 val unitOptions = when (historyVariable) { "temp" -> listOf("auto" to "°C", "°F" to "°F"); "wspd", "gust" -> listOf("auto" to "km/h", "m/s" to "m/s", "mph" to "mph", "kn" to "nudos"); "rain" -> listOf("auto" to "mm", "in" to "in"); else -> listOf("auto" to when (historyVariable) { "hum" -> "%"; "bar" -> "hPa"; else -> "" }) }
@@ -835,6 +944,22 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                         }
                                     }
                                     if (historyVariable == "rain") {
+                                        if (historyRainRate.isNotEmpty()) {
+                                            val peakRate = historyRainRate.maxByOrNull { it.second }
+                                            Surface(color = if (light) Color(0xFFFFF1E5) else Color(0xFF2B211B), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                    Text("Intensidad de lluvia · mm/h", color = muted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                                    Text("Máxima registrada: ${String.format(Locale.getDefault(), "%.1f", peakRate?.second ?: 0.0)} mm/h", color = fg, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                                    Row(Modifier.fillMaxWidth().height(54.dp), horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.Bottom) {
+                                                        val rateMax = historyRainRate.maxOfOrNull { it.second }?.coerceAtLeast(0.1) ?: 0.1
+                                                        historyRainRate.takeLast(60).forEach { point ->
+                                                            Box(Modifier.weight(1f).fillMaxHeight((point.second / rateMax).toFloat().coerceIn(0.03f, 1f)).clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)).background(Color(0xFFFFA45B)))
+                                                        }
+                                                    }
+                                                    Text(peakRate?.first?.toLongOrNull()?.let { java.time.Instant.ofEpochSecond(it).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("dd/MM HH:mm")) }?.let { "Pico: $it" } ?: "Sin hora disponible", color = muted, fontSize = 11.sp)
+                                                }
+                                            }
+                                        } else Text("No hay datos de intensidad (mm/h) disponibles para este periodo.", color = muted, fontSize = 12.sp)
                                         val rainTotalMm = history.sumOf { it.second.coerceAtLeast(0.0) }
                                         val rainTotal = rainTotalMm * if (historyUnitChoice == "in") (1.0 / 25.4) else 1.0
                                         Surface(color = if (light) Color(0xFFEAF4FD) else Color(0xFF0B1C2D), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
@@ -1218,7 +1343,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                 }
                                 Text("Variable", color = muted, fontSize = 12.sp)
                                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    listOf("temp" to "Temperatura", "hum" to "Humedad", "bar" to "Presión", "wspd" to "Viento", "rain" to "Lluvia", "gust" to "Rachas").forEach { (key, label) ->
+                                    listOf("temp" to "Temperatura", "hum" to "Humedad", "bar" to "Presión", "wspd" to "Viento", "gust" to "Rachas", "wdir" to "Dirección viento", "rain" to "Lluvia", "rainrate" to "Intensidad lluvia", "solar" to "Radiación solar", "uv" to "Índice UV", "tempin" to "Temperatura interior", "humin" to "Humedad interior").forEach { (key, label) ->
                                         FilterChip(selected = historyVariable == key, onClick = { historyVariable = key; refreshHistory() }, label = { Text(label) })
                                     }
                                 }
@@ -1397,6 +1522,24 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
             },
             confirmButton = { TextButton(onClick = { showSettings = false }) { Text("Cerrar") } }
         )
+        if (editingStationId != null) AlertDialog(
+            onDismissRequest = { editingStationId = null },
+            title = { Text("Editar estación") },
+            text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(editingStationName, { editingStationName = it }, label = { Text("Nombre") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                OutlinedTextField(editingStationCity, { editingStationCity = it }, label = { Text("Localidad") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                Text("ID de Weathercloud: ${editingStationId}", color = muted, fontSize = 12.sp)
+            } },
+            confirmButton = { TextButton(onClick = {
+                val id = editingStationId
+                if (id != null) {
+                    stations = stations.map { if (it.id == id) it.copy(name = editingStationName.trim().ifBlank { it.name }, city = editingStationCity.trim()) else it }
+                    persistStations(); editingStationId = null
+                    if (id == selectedId) refreshCurrent()
+                }
+            }) { Text("Guardar") } },
+            dismissButton = { TextButton(onClick = { editingStationId = null }) { Text("Cancelar") } }
+        )
         if (showStations) AlertDialog(
             onDismissRequest = { showStations = false },
             title = { Text("Gestionar mis estaciones") },
@@ -1405,19 +1548,21 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     stations.forEach { station ->
                         Surface(color = card, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
                             Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Column(Modifier.weight(1f)) { Text(station.name, color = fg, fontWeight = FontWeight.Bold); Text(station.id, color = muted, fontSize = 12.sp) }
+                                Column(Modifier.weight(1f)) { Text(station.name, color = fg, fontWeight = FontWeight.Bold); Text(station.city.ifBlank { "Localidad no indicada" }, color = muted, fontSize = 12.sp); Text(station.id, color = muted, fontSize = 12.sp) }
+                                TextButton(onClick = { editingStationId = station.id; editingStationName = station.name; editingStationCity = station.city }) { Text("Editar") }
                                 TextButton(onClick = { selectedId = station.id; persistStations(); showStations = false; refreshCurrent() }) { Text(if (selectedId == station.id) "Activa" else "Usar") }
                                 TextButton(onClick = { stations = stations.filterNot { it.id == station.id }; if (stations.isEmpty()) stations = listOf(Station("Mi estación", "3102580268")); if (stations.none { it.id == selectedId }) selectedId = stations.first().id; persistStations() }) { Text("Eliminar") }
                             }
                         }
                     }
                     OutlinedTextField(newName, { newName = it }, label = { Text("Nombre de estación") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                    OutlinedTextField(newCity, { newCity = it }, label = { Text("Localidad (opcional)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                     OutlinedTextField(newId, { newId = it }, label = { Text("ID de Weathercloud") }, modifier = Modifier.fillMaxWidth(), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                     Button(onClick = {
                         val id = newId.trim()
                         if (id.isNotEmpty() && stations.none { it.id == id }) {
-                            stations = stations + Station(newName.trim().ifBlank { "Estación ${id.takeLast(4)}" }, id)
-                            selectedId = id; persistStations(); newName = ""; newId = ""
+                            stations = stations + Station(newName.trim().ifBlank { "Estación ${id.takeLast(4)}" }, id, newCity.trim())
+                            selectedId = id; persistStations(); newName = ""; newId = ""; newCity = ""
                         }
                     }) { Text("Añadir estación") }
                 }
@@ -1446,10 +1591,37 @@ private fun reverseGeocode(latitude: Double, longitude: Double): String {
     } catch (_: Exception) { "Mi ubicación" }
 }
 
+private fun formatWindDirection(value: String): String {
+    val raw = value.trim()
+    val numeric = raw.toDoubleOrNull()
+    if (numeric == null) {
+        val token = raw.uppercase(Locale.ROOT).replace(" ", "").replace("-", "")
+        val cardinal = when (token) {
+            "N", "NORTH", "NORTE" -> "Norte"
+            "NNE", "NORTHNORTHEAST", "NE", "NORTHEAST" -> "Noreste"
+            "ENE", "EASTNORTHEAST", "E", "EAST", "ESTE", "ESE", "EASTSOUTHEAST" -> "Este"
+            "SE", "SOUTHEAST", "SURESTE", "SSE", "SOUTHSOUTHEAST" -> "Sureste"
+            "S", "SOUTH", "SUR", "SSW", "SOUTHSOUTHWEST" -> "Sur"
+            "SW", "SOUTHWEST", "SUROESTE", "WSW", "WESTSOUTHWEST", "W", "WEST", "OESTE" -> "Oeste"
+            "WNW", "WESTNORTHWEST", "NW", "NORTHWEST", "NOROESTE", "NNW", "NORTHNORTHWEST" -> "Noroeste"
+            else -> raw
+        }
+        return cardinal
+    }
+    val normalized = ((numeric % 360.0) + 360.0) % 360.0
+    val directions = listOf("Norte", "Noreste", "Este", "Sureste", "Sur", "Suroeste", "Oeste", "Noroeste")
+    val index = kotlin.math.floor((normalized + 22.5) / 45.0).toInt() % 8
+    return directions[index]
+}
+
+private fun abbreviateWindDirection(direction: String): String = when (direction.lowercase(Locale.ROOT)) {
+    "norte" -> "N"; "noreste" -> "NE"; "este" -> "E"; "sureste" -> "SE"; "sur" -> "S"; "suroeste" -> "SO"; "oeste" -> "O"; "noroeste" -> "NO"; else -> direction
+}
+
 private fun loadStations(prefs: android.content.SharedPreferences): List<Station> {
     return try {
         val arr = JSONArray(prefs.getString("stations", "[]") ?: "[]")
-        (0 until arr.length()).map { i -> arr.getJSONObject(i).let { Station(it.optString("name"), it.optString("id")) } }.ifEmpty { listOf(Station("Mi estación", "3102580268")) }
+        (0 until arr.length()).map { i -> arr.getJSONObject(i).let { Station(it.optString("name"), it.optString("id"), it.optString("city")) } }.ifEmpty { listOf(Station("Mi estación", "3102580268")) }
     } catch (_: Exception) { listOf(Station("Mi estación", "3102580268")) }
 }
 private fun enc(value: String) = URLEncoder.encode(value, "UTF-8")
