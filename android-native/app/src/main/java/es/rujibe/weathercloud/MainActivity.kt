@@ -145,6 +145,8 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     fun refreshCurrent() {
         val station = stations.firstOrNull { it.id == selectedId } ?: return
         loading = true
+        readings = emptyList()
+        todayTemperatureValues = emptyList()
         status = "Consultando ${station.name}…"
         scope.launch {
             try {
