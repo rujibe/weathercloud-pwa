@@ -17,6 +17,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.consume
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.draw.clip
@@ -98,6 +100,8 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     var newName by remember { mutableStateOf("") }
     var newId by remember { mutableStateOf("") }
     var readings by remember { mutableStateOf<List<Reading>>(emptyList()) }
+    var lastUpdatedAt by remember { mutableStateOf(prefs.getString("lastUpdatedAt", "") ?: "") }
+    var historyUnitChoice by remember { mutableStateOf(prefs.getString("historyUnitChoice", "auto") ?: "auto") }
     var forecast by remember { mutableStateOf<List<ForecastDay>>(emptyList()) }
     var hourlyForecast by remember { mutableStateOf<List<ForecastHour>>(emptyList()) }
     var forecastSearchResults by remember { mutableStateOf<List<ForecastPlace>>(emptyList()) }
@@ -166,6 +170,8 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     if (raw == null || raw == JSONObject.NULL || raw.toString().isBlank()) null
                     else Reading(f[0], f[1], raw.toString().toDoubleOrNull()?.let { String.format(Locale.getDefault(), "%.1f", it) } ?: raw.toString(), f[2], f[3])
                 }
+                lastUpdatedAt = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy · HH:mm", Locale("es", "ES")))
+                prefs.edit().putString("lastUpdatedAt", lastUpdatedAt).apply()
                 status = "Actualizado · ${station.name}"
             } catch (e: Exception) { status = "No se pudieron cargar los datos: ${e.message}" }
             loading = false
@@ -508,8 +514,8 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
         }
     }
 
-    LaunchedEffect(selectedId) {
-        refreshCurrent()
+    LaunchedEffect(selectedId) { refreshCurrent() }
+    LaunchedEffect(Unit) {
         while (true) {
             delay(5 * 60 * 1000L)
             refreshCurrent()
@@ -517,7 +523,21 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     }
 
     MaterialTheme(colorScheme = if (light) lightColorScheme(primary = accentColor, background = bg, surface = card, onSurface = fg) else darkColorScheme(primary = accentColor, background = bg, surface = card, onSurface = fg)) {
-        Column(Modifier.fillMaxSize().background(bg)) {
+        Column(Modifier.fillMaxSize().background(bg).pointerInput(tab) {
+            var dragTotal = 0f
+            detectHorizontalDragGestures(
+                onDragStart = { dragTotal = 0f },
+                onHorizontalDrag = { change, amount -> dragTotal += amount; change.consume() },
+                onDragEnd = {
+                    if (kotlin.math.abs(dragTotal) > 85f) {
+                        val tabs = listOf("Estación", "Pronóstico", "Análisis")
+                        val index = tabs.indexOf(tab).coerceAtLeast(0)
+                        val next = if (dragTotal < 0) (index + 1).coerceAtMost(tabs.lastIndex) else (index - 1).coerceAtLeast(0)
+                        if (next != index) tab = tabs[next]
+                    }
+                }
+            )
+        }) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
                     Text("WEATHERCLOUD  ·  MI ESTACIÓN", color = accentColor, fontSize = (11 * scale).sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
@@ -570,7 +590,10 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                             Button(onClick = { refreshCurrent() }, colors = ButtonDefaults.buttonColors(containerColor = if (light) Color(0xFF142F4A) else Color(0xFFC4F0FF)), shape = RoundedCornerShape(13.dp)) {
                                                 Text("↻ Actualizar", color = if (light) Color.White else Color(0xFF10283B), fontWeight = FontWeight.Bold)
                                             }
-                                            Text(status.take(42), color = if (light) Color(0xFF315D7B) else Color(0xFFD8EAFF), fontSize = 10.sp, maxLines = 2)
+                                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                Text("Última actualización", color = if (light) Color(0xFF315D7B) else Color(0xFFC1D8EA), fontSize = 10.sp)
+                                                Text(lastUpdatedAt.ifBlank { "Pendiente de la primera lectura" }, color = if (light) Color(0xFF14243A) else Color(0xFFF2F7FC), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
+                                            }
                                         }
                                     }
                                     Column(Modifier.weight(0.9f), verticalArrangement = Arrangement.spacedBy(9.dp)) {
@@ -582,8 +605,8 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                         ).forEach { stat ->
                                             Surface(color = Color(0x2607192B), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth().border(1.dp, Color(0x24FFFFFF), RoundedCornerShape(16.dp))) {
                                                 Column(Modifier.padding(11.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                                    Text(stat.first, color = if (light) Color(0xFF52677D) else Color(0xFFC3D8E8), fontSize = 10.sp)
-                                                    Text(stat.second, color = if (light) Color(0xFF14243A) else TextMain, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                                                    Text(stat.first, color = if (light) Color(0xFF52677D) else Color(0xFFC3D8E8), fontSize = 12.sp)
+                                                    Text(stat.second, color = if (light) Color(0xFF14243A) else TextMain, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                                                 }
                                             }
                                         }
