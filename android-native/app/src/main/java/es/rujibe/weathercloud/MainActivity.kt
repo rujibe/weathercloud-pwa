@@ -799,7 +799,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                         Surface(color = card, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(20.dp))) {
                             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Text("Comparador estadístico · estaciones guardadas", color = fg, fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                                Text("Comparador estadístico · estaciones guardadas", color = muted, fontSize = 13.sp)
+                                Text("Cobertura del histórico, anomalías y ranking por estaciones.", color = muted, fontSize = 13.sp)
                                 Text("Estaciones que quieres comparar", color = muted, fontSize = 12.sp)
                                 stations.forEach { station ->
                                     Row(verticalAlignment = Alignment.CenterVertically) {
