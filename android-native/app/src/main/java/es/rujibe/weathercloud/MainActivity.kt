@@ -1261,10 +1261,10 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                     Surface(color = if (light) Color(0xFFF4F8FC) else Color(0xFF0B1C2D), shape = RoundedCornerShape(13.dp), modifier = Modifier.fillMaxWidth()) {
                                         Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(11.dp)) {
                                             Text(hour.time, color = muted, fontSize = 12.sp, modifier = Modifier.width(43.dp))
-                                            Text(weatherEmoji(hour.code), fontSize = 23.sp)
+                                            Text(weatherEmoji(hour.code, hour.isDay), fontSize = 23.sp)
                                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                                 Text(weatherText(hour.code), color = fg, fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                                                Text("Lluvia ${hour.rainChance}% · viento ${hour.wind.toInt()} km/h", color = muted, fontSize = 10.sp)
+                                                Text("Precip. ${String.format(Locale.getDefault(), \"%.1f\", hour.rainMm)} mm · prob. ${hour.rainChance}% · viento ${hour.wind.toInt()} km/h", color = muted, fontSize = 10.sp)
                                             }
                                             Text(String.format(Locale.getDefault(), "%.0f°", hour.temperature), color = fg, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                                         }
