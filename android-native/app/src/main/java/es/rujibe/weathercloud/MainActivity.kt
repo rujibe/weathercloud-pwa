@@ -188,7 +188,9 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                 val winds = h.getJSONArray("wind_speed_10m")
                 val gusts = h.getJSONArray("wind_gusts_10m")
                 val rains = h.getJSONArray("precipitation")
-                val currentHour = java.time.LocalDateTime.now().withMinute(0).withSecond(0).withNano(0)
+                val currentTime = runCatching { java.time.LocalDateTime.parse(data.optJSONObject("current")?.optString("time")) }.getOrNull()
+                    ?: java.time.LocalDateTime.now()
+                val currentHour = currentTime.withMinute(0).withSecond(0).withNano(0)
                 hourlyForecast = (0 until times.length()).filter { i ->
                     runCatching { !java.time.LocalDateTime.parse(times.optString(i)).isBefore(currentHour) }.getOrDefault(false)
                 }.take(48).map { i ->
