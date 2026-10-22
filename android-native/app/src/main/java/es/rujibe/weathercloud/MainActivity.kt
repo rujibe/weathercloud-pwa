@@ -92,6 +92,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     var hourlyForecast by remember { mutableStateOf<List<ForecastHour>>(emptyList()) }
     var forecastSearchResults by remember { mutableStateOf<List<ForecastPlace>>(emptyList()) }
     var forecastNow by remember { mutableStateOf<ForecastHour?>(null) }
+    var showAllForecastHours by remember { mutableStateOf(false) }
     var forecastSearch by remember { mutableStateOf("") }
     var forecastPlaceName by remember { mutableStateOf(prefs.getString("forecastPlaceName", "Madrid, España") ?: "Madrid, España") }
     var history by remember { mutableStateOf<List<Pair<String, Double>>>(emptyList()) }
@@ -184,10 +185,13 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                 val winds = h.getJSONArray("wind_speed_10m")
                 val gusts = h.getJSONArray("wind_gusts_10m")
                 val rains = h.getJSONArray("precipitation")
-                val today = java.time.LocalDate.now().toString()
-                hourlyForecast = (0 until times.length()).filter { times.optString(it).startsWith(today) }.map { i ->
+                val currentHour = java.time.LocalDateTime.now().withMinute(0).withSecond(0).withNano(0)
+                hourlyForecast = (0 until times.length()).filter { i ->
+                    runCatching { !java.time.LocalDateTime.parse(times.optString(i)).isBefore(currentHour) }.getOrDefault(false)
+                }.take(48).map { i ->
                     ForecastHour(times.optString(i).substringAfter('T'), codes.optInt(i), temps.optDouble(i), probs.optInt(i), rains.optDouble(i), winds.optDouble(i), gusts.optDouble(i))
                 }
+                showAllForecastHours = false
                 val cur = data.optJSONObject("current")
                 if (cur != null) {
                     forecastNow = ForecastHour(cur.optString("time").substringAfter('T'), cur.optInt("weather_code"), cur.optDouble("temperature_2m"), cur.optInt("precipitation_probability"), cur.optDouble("precipitation"), cur.optDouble("wind_speed_10m"), cur.optDouble("wind_gusts_10m"))
@@ -580,8 +584,13 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                         }
                     }
                     if (hourlyForecast.isNotEmpty()) {
-                        item { Text("Previsión por horas · $forecastPlaceName", color = fg, fontWeight = FontWeight.Bold, fontSize = 18.sp) }
-                        items(hourlyForecast) { hour ->
+                        item {
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(if (showAllForecastHours) "Próximas 48 horas" else "Próximas horas", color = fg, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                TextButton(onClick = { showAllForecastHours = !showAllForecastHours }) { Text(if (showAllForecastHours) "Ver menos" else "Ver 48 h", color = accentColor) }
+                            }
+                        }
+                        items(if (showAllForecastHours) hourlyForecast else hourlyForecast.take(8)) { hour ->
                             Surface(color = card, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(14.dp))) {
                                 Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                     Text(hour.time, color = muted, fontSize = 12.sp, modifier = Modifier.width(46.dp))
