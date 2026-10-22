@@ -390,6 +390,40 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                             if (pair.size == 1) Spacer(Modifier.weight(1f))
                         }
                     }
+                    if (nearby) item {
+                        Surface(color = card, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(18.dp))) {
+                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Text("Estaciones Weathercloud cercanas", color = fg, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                Text("Busca estaciones públicas alrededor de la ubicación seleccionada en Previsión.", color = muted, fontSize = 12.sp)
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    listOf("5", "10", "25", "50").forEach { radius ->
+                                        FilterChip(selected = nearbyRadius == radius, onClick = { nearbyRadius = radius }, label = { Text(radius + " km") })
+                                    }
+                                }
+                                Button(onClick = { searchNearbyStations() }, enabled = !loading, colors = ButtonDefaults.buttonColors(containerColor = accentColor)) { Text("📡 Buscar estaciones", color = Navy) }
+                                Text(nearbyMessage, color = muted, fontSize = 12.sp)
+                                nearbyResults.forEach { station ->
+                                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Column(Modifier.weight(1f)) {
+                                            Text(station.name, color = fg, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                            val details = mutableListOf(station.city, String.format(Locale.getDefault(), "%.1f km", station.distanceKm), "ID " + station.id)
+                                            station.updateMinutes?.let { details.add(if (it < 1) "actualizada ahora" else "actualizada hace " + it + " min") }
+                                            Text(details.filter { it.isNotBlank() }.joinToString(" · "), color = muted, fontSize = 11.sp)
+                                        }
+                                        TextButton(onClick = {
+                                            if (stations.none { it.id == station.id }) {
+                                                stations = stations + Station(station.name, station.id)
+                                                selectedId = station.id
+                                                persistStations()
+                                                refreshCurrent()
+                                            }
+                                        }, enabled = stations.none { it.id == station.id }) { Text(if (stations.any { it.id == station.id }) "Ya añadida" else "＋ Añadir") }
+                                    }
+                                    Divider(color = if (light) Color(0xFFDCE5EF) else Color(0xFF263A52))
+                                }
+                            }
+                        }
+                    }
                 }
                 "Pronóstico" -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     item {
