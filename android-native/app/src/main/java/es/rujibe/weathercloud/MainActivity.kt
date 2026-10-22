@@ -755,7 +755,50 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     item {
                         Surface(color = card, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(20.dp))) {
                             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Text("Análisis por estación", color = fg, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                                Text("Validación histórica por estación", color = fg, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                                Text("IA que compara Weathercloud con Open-Meteo", color = muted, fontSize = 13.sp)
+                                Text("Compara las observaciones de los últimos 30 días con pronósticos horarios archivados. Solo se evalúan horas coincidentes; el porcentaje no garantiza aciertos futuros.", color = muted, fontSize = 12.sp)
+                                Text("Estación que quieres validar", color = muted, fontSize = 12.sp)
+                                stations.forEach { station ->
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        RadioButton(selected = validationStationId == station.id, onClick = { validationStationId = station.id; validationResult = null })
+                                        Column(Modifier.weight(1f)) {
+                                            Text(station.name, color = fg, fontSize = 13.sp)
+                                            Text("ID " + station.id, color = muted, fontSize = 10.sp)
+                                        }
+                                    }
+                                }
+                                Button(onClick = { runHistoricalValidation() }, enabled = !loading, colors = ButtonDefaults.buttonColors(containerColor = accentColor), modifier = Modifier.fillMaxWidth()) {
+                                    Text(if (loading) "Comparando datos archivados…" else "✦ Comparar últimos 30 días", color = Navy)
+                                }
+                                Text(validationMessage, color = muted, fontSize = 12.sp)
+                                validationResult?.let { result ->
+                                    if (result.overall != null) {
+                                        Surface(color = if (light) Color(0xFFE5F4EE) else Color(0xFF12352F), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+                                            Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Text("Porcentaje de acierto de Open-Meteo", color = muted, fontSize = 12.sp)
+                                                Text(String.format(Locale.getDefault(), "%.0f%%", result.overall), color = if (light) Color(0xFF176B50) else Color(0xFF8EE6CF), fontSize = 38.sp, fontWeight = FontWeight.Bold)
+                                                Text("Media simple de " + result.coverage + " variables evaluables", color = muted, fontSize = 11.sp)
+                                            }
+                                        }
+                                    }
+                                    result.metrics.forEach { metric ->
+                                        Surface(color = bg, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                                            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                Text(metric.label, color = fg, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                                Text(if (metric.score == null) "Sin datos comparables (" + metric.count + " pares)" else "Acierto " + String.format(Locale.getDefault(), "%.0f%%", metric.score) + " · " + metric.count + " horas · error medio " + String.format(Locale.getDefault(), "%.2f", metric.mae) + " " + metric.unit, color = muted, fontSize = 12.sp)
+                                            }
+                                        }
+                                    }
+                                    Text("La lluvia registrada por Weathercloud puede representar intervalos distintos a la precipitación horaria del modelo. Las métricas se interpretan con cautela.", color = muted, fontSize = 11.sp)
+                                }
+                            }
+                        }
+                    }
+                    item {
+                        Surface(color = card, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(20.dp))) {
+                            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Text("Comparador estadístico · estaciones guardadas", color = fg, fontWeight = FontWeight.Bold, fontSize = 20.sp)
                                 Text("Comparador estadístico · estaciones guardadas", color = muted, fontSize = 13.sp)
                                 Text("Estaciones que quieres comparar", color = muted, fontSize = 12.sp)
                                 stations.forEach { station ->
