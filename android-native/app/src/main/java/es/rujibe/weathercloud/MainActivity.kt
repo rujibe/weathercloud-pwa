@@ -126,6 +126,8 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     var nearbyMessage by remember { mutableStateOf("Selecciona un lugar en Previsión y conecta el Worker para buscar estaciones.") }
     var nearbyResults by remember { mutableStateOf<List<NearbyStation>>(emptyList()) }
     var status by remember { mutableStateOf("Listo para consultar la estación") }
+    var weatherChangeDescription by remember { mutableStateOf("Consultando tendencias reales de la estación…") }
+    var weatherChangeMeta by remember { mutableStateOf("Se necesitan observaciones históricas recientes.") }
     var loading by remember { mutableStateOf(false) }
     var forecastLat by remember { mutableStateOf(prefs.getString("forecastLat", "40.4168") ?: "40.4168") }
     var forecastLon by remember { mutableStateOf(prefs.getString("forecastLon", "-3.7038") ?: "-3.7038") }
@@ -173,6 +175,36 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     if (raw == null || raw == JSONObject.NULL || raw.toString().isBlank()) null
                     else Reading(f[0], f[1], raw.toString().toDoubleOrNull()?.let { String.format(Locale.getDefault(), "%.1f", it) } ?: raw.toString(), f[2], f[3])
                 }
+                val trend = withContext(Dispatchers.IO) {
+                    val historyBase = apiBase.trim().trimEnd('/')
+                    if (historyBase.isBlank()) null else runCatching {
+                        val now = System.currentTimeMillis() / 1000
+                        val start = now - 6 * 3600
+                        val deltas = listOf("bar", "wspd", "temp").map { key ->
+                            val json = JSONObject(httpGet(historyBase + "/api/history?station_id=" + enc(station.id) + "&variable=" + key + "&period=day"))
+                            val points = json.optJSONArray("points") ?: JSONArray()
+                            val values = (0 until points.length()).mapNotNull { i ->
+                                val p = points.optJSONObject(i) ?: return@mapNotNull null
+                                var time = p.optDouble("time", Double.NaN)
+                                if (time > 1e12) time /= 1000
+                                val value = p.optDouble("value", Double.NaN)
+                                if (time.isFinite() && time >= start && time <= now && value.isFinite()) time to value else null
+                            }.sortedBy { it.first }
+                            if (values.size >= 2 && values.last().first - values.first().first >= 2700) values.last().second - values.first().second else null
+                        }
+                        val pressure = deltas[0]
+                        val wind = deltas[1]?.times(3.6)
+                        val temp = deltas[2]
+                        val signals = mutableListOf<String>()
+                        if (pressure != null && pressure <= -1.5) signals.add("la presión ha bajado %.1f hPa".format(Locale.getDefault(), kotlin.math.abs(pressure)))
+                        else if (pressure != null && pressure >= 1.5) signals.add("la presión ha subido %.1f hPa".format(Locale.getDefault(), pressure))
+                        if (wind != null && wind >= 10) signals.add("el viento ha aumentado %.0f km/h".format(Locale.getDefault(), wind))
+                        if (temp != null && kotlin.math.abs(temp) >= 2) signals.add("la temperatura ha ${if (temp > 0) "subido" else "bajado"} %.1f °C".format(Locale.getDefault(), kotlin.math.abs(temp)))
+                        val description = if (signals.isNotEmpty()) "En las últimas 6 horas, " + signals.joinToString(" y ") + "." else if (deltas.any { it != null }) "No se observan cambios importantes en las variables medidas durante el periodo disponible." else "No hay suficientes observaciones de las últimas 6 horas para calcular una tendencia fiable."
+                        description to "Tendencia basada en el histórico real de Weathercloud · últimas 6 horas"
+                    }.getOrNull()
+                }
+                if (trend != null) { weatherChangeDescription = trend.first; weatherChangeMeta = trend.second }
                 todayTemperatureValues = withContext(Dispatchers.IO) {
                     val historyBase = apiBase.trim().trimEnd('/')
                     if (historyBase.isBlank()) emptyList() else runCatching {
@@ -693,8 +725,8 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                 Text("🌤️", fontSize = 26.sp)
                                 Column(Modifier.weight(1f)) {
                                     Text("Cambio de tiempo", color = fg, fontWeight = FontWeight.SemiBold)
-                                    Text(if (readings.isEmpty()) "Se analizará la evolución cuando haya datos suficientes." else "Lecturas actuales disponibles. Actualiza la estación para consultar los últimos datos.", color = muted, fontSize = 12.sp)
-                                    Text(if (readings.isEmpty()) "Sin tendencia calculada todavía" else "Estado de la estación: conectada", color = accentColor, fontSize = 11.sp)
+                                    Text(weatherChangeDescription, color = muted, fontSize = 12.sp)
+                                    Text(weatherChangeMeta, color = accentColor, fontSize = 11.sp)
                                 }
                             }
                         }
