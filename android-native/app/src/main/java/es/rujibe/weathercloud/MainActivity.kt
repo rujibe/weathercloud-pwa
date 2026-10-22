@@ -697,7 +697,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                 Text("Evolución de la estación seleccionada", color = muted, fontSize = 12.sp)
                                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     listOf("temp" to "Temperatura", "hum" to "Humedad", "bar" to "Presión", "wspd" to "Viento", "rain" to "Lluvia", "gust" to "Rachas").forEach { (key, label) ->
-                                        FilterChip(selected = historyVariable == key, onClick = { historyVariable = key; refreshHistory() }, label = { Text(label) })
+                                        FilterChip(selected = historyVariable == key, onClick = { historyVariable = key; historyUnitChoice = "auto"; prefs.edit().putString("historyUnitChoice", "auto").apply(); refreshHistory() }, label = { Text(label) })
                                     }
                                 }
                                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
