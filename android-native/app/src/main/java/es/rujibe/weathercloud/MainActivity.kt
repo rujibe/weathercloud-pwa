@@ -173,11 +173,24 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     arrayOf("tempin","Temperatura interior","°C","🏠"), arrayOf("humin","Humedad interior","%","🏡")
                 )
                 readings = fields.mapNotNull { f ->
-                    val raw = when (f[0]) {
-                        "gust" -> listOf("gust", "wgust", "wind_gust", "windgust", "windGust", "wind_gusts_10m", "gustspeed", "wind_gust_speed").firstNotNullOfOrNull { key -> result.opt(key).takeUnless { it == null || it == JSONObject.NULL || it.toString().isBlank() } }
-                        "wdir" -> listOf("wdir", "winddir", "wind_dir", "wind_direction", "windDirection", "winddirection").firstNotNullOfOrNull { key -> result.opt(key).takeUnless { it == null || it == JSONObject.NULL || it.toString().isBlank() } }
-                        else -> result.opt(f[0])
+                    val aliases = when (f[0]) {
+                        "temp" -> listOf("temp", "temperature", "temperature_outdoor", "temp_out", "tempout")
+                        "hum" -> listOf("hum", "humidity", "humidity_outdoor", "hum_out", "humout")
+                        "bar" -> listOf("bar", "pressure", "pressure_relative", "barometer", "barometric_pressure")
+                        "wspd" -> listOf("wspd", "wind_speed", "windspeed", "wind_speed_kph", "wind_kph")
+                        "gust" -> listOf("gust", "wgust", "wind_gust", "windgust", "windGust", "wind_gusts_10m", "gustspeed", "wind_gust_speed", "gust_kph")
+                        "rain" -> listOf("rain", "rain_daily", "rain_day", "rainfall", "precipitation")
+                        "rainrate" -> listOf("rainrate", "rain_rate", "rain_rate_mm", "rain_rate_mm_h")
+                        "wdir" -> listOf("wdir", "winddir", "wind_dir", "wind_direction", "windDirection", "winddirection", "wind_degree")
+                        "solar" -> listOf("solar", "solar_radiation", "solarradiation")
+                        "uv" -> listOf("uv", "uv_index", "uvindex")
+                        "dew" -> listOf("dew", "dew_point", "dewpoint")
+                        "heat" -> listOf("heat", "feels_like", "apparent_temperature", "heat_index")
+                        "tempin" -> listOf("tempin", "temperature_indoor", "temp_indoor", "temp_in")
+                        "humin" -> listOf("humin", "humidity_indoor", "hum_indoor", "hum_in")
+                        else -> listOf(f[0])
                     }
+                    val raw = aliases.firstNotNullOfOrNull { key -> result.opt(key).takeUnless { it == null || it == JSONObject.NULL || it.toString().isBlank() } }
                     if (raw == null || raw == JSONObject.NULL || raw.toString().isBlank()) null
                     else {
                         val numeric = raw.toString().toDoubleOrNull()
