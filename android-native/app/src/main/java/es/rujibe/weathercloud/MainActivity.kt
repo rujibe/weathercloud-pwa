@@ -306,9 +306,16 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                         Triple("rain", "Precipitación acumulada", "mm"),
                         Triple("rainrate", "Intensidad de lluvia", "mm/h")
                     )
+                    val observedByKey = mutableMapOf<String, List<Pair<Long, Double>>>()
                     val metrics = configs.map { (key, label, unit) ->
                         val historyJson = JSONObject(httpGet(base + "/api/history?station_id=" + enc(station.id) + "&variable=" + key + "&period=month"))
                         val points = historyJson.optJSONArray("points") ?: JSONArray()
+                        observedByKey[key] = (0 until points.length()).mapNotNull { pointIndex ->
+                            val point = points.optJSONObject(pointIndex) ?: return@mapNotNull null
+                            val time = point.optDouble("time", Double.NaN)
+                            val value = point.optDouble("value", Double.NaN)
+                            if (time.isFinite() && value.isFinite()) time.toLong() to value else null
+                        }
                         val forecastKey = when (key) { "temp" -> "temperature_2m"; "wspd" -> "wind_speed_10m"; "gust" -> "wind_gusts_10m"; else -> "precipitation" }
                         val forecastValues = hourly.optJSONArray(forecastKey)
                         val pairs = mutableListOf<Pair<Double, Double>>()
@@ -335,8 +342,32 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                         val mae = if (pairs.isEmpty()) null else pairs.sumOf { kotlin.math.abs(it.first - it.second) } / pairs.size
                         ValidationMetric(label, score, mae, pairs.size, unit)
                     }
-                    val available = metrics.filter { it.score != null }
-                    StationValidationResult(station, location.optString("name", station.name), if (available.isEmpty()) null else available.mapNotNull { it.score }.average(), available.size, metrics)
+                    val rainRatePoints = observedByKey["rainrate"] ?: emptyList()
+                    val rainPoints = observedByKey["rain"] ?: emptyList()
+                    val probabilities = hourly.optJSONArray("precipitation_probability")
+                    val brierErrors = mutableListOf<Double>()
+                    if (probabilities != null) rainRatePoints.forEach { (time, rate) ->
+                        var nearest = -1
+                        var delta = Long.MAX_VALUE
+                        for (j in archiveTimes.indices) {
+                            val diff = kotlin.math.abs(archiveTimes[j] - time)
+                            if (diff < delta) { delta = diff; nearest = j }
+                            if (archiveTimes[j] > time + 3600) break
+                        }
+                        if (nearest >= 0 && delta <= 1800) {
+                            val probability = probabilities.optDouble(nearest, Double.NaN)
+                            if (probability.isFinite()) {
+                                val observedRain = rate > 0.0 || rainPoints.any { (rainTime, amount) -> kotlin.math.abs(rainTime - time) <= 1800 && amount > 0.0 }
+                                val p = probability / 100.0
+                                val actual = if (observedRain) 1.0 else 0.0
+                                brierErrors.add((p - actual) * (p - actual))
+                            }
+                        }
+                    }
+                    val brier = if (brierErrors.isEmpty()) null else brierErrors.average()
+                    val allMetrics = metrics + ValidationMetric("Probabilidad de lluvia", if (brier == null) null else 100.0 * (1.0 - brier), brier, brierErrors.size, "Brier")
+                    val available = allMetrics.filter { it.score != null }
+                    StationValidationResult(station, location.optString("name", station.name), if (available.isEmpty()) null else available.mapNotNull { it.score }.average(), available.size, allMetrics)
                 }
                 validationResult = result
                 validationMessage = if (result.coverage == 0) "No hay suficientes observaciones coincidentes para calcular un porcentaje fiable." else "Comparación terminada · ${result.place} · ${result.coverage} variables evaluables."
