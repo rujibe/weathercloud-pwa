@@ -734,7 +734,22 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                     }
                                     if (selectedHistoryIndex in history.indices) {
                                         val point = history[selectedHistoryIndex]
-                                        Text(point.first + " · " + String.format(Locale.getDefault(), "%.2f %s", point.second, historyUnit), color = accentColor, fontSize = 12.sp)
+                                        Surface(color = if (light) Color(0xFFEAF4FD) else Color(0xFF142A40), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                                            Column(Modifier.padding(11.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                                Text("PUNTO SELECCIONADO", color = muted, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                                                Text(point.first + " · " + String.format(Locale.getDefault(), "%.2f %s", point.second, historyUnit), color = fg, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                            }
+                                        }
+                                    }
+                                    Row(Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Text("Fecha / hora", color = muted, fontSize = 10.sp, modifier = Modifier.weight(1.4f))
+                                        Text("Valor", color = muted, fontSize = 10.sp, modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.End)
+                                    }
+                                    history.takeLast(10).asReversed().forEachIndexed { rowIndex, point ->
+                                        Row(Modifier.fillMaxWidth().background(if (rowIndex % 2 == 0) (if (light) Color(0xFFF3F7FB) else Color(0xFF0D1929)) else Color.Transparent, RoundedCornerShape(8.dp)).clickable { selectedHistoryIndex = history.lastIndex - rowIndex }.padding(horizontal = 9.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            Text(point.first, color = if (rowIndex == 0) fg else muted, fontSize = 10.sp, modifier = Modifier.weight(1.4f), maxLines = 1)
+                                            Text(String.format(Locale.getDefault(), "%.2f %s", point.second, historyUnit), color = if (rowIndex == 0) fg else muted, fontSize = 10.sp, fontWeight = if (rowIndex == 0) FontWeight.SemiBold else FontWeight.Normal, modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.End)
+                                        }
                                     }
                                 } else {
                                     Text("Carga el histórico para ver la evolución de tus sensores.", color = muted, fontSize = 12.sp)
