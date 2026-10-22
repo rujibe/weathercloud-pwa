@@ -173,6 +173,25 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     if (raw == null || raw == JSONObject.NULL || raw.toString().isBlank()) null
                     else Reading(f[0], f[1], raw.toString().toDoubleOrNull()?.let { String.format(Locale.getDefault(), "%.1f", it) } ?: raw.toString(), f[2], f[3])
                 }
+                todayTemperatureValues = withContext(Dispatchers.IO) {
+                    val historyBase = apiBase.trim().trimEnd('/')
+                    if (historyBase.isBlank()) emptyList() else runCatching {
+                        val historyJson = JSONObject(httpGet(historyBase + "/api/history?station_id=" + enc(station.id) + "&variable=temp&period=day"))
+                        val points = historyJson.optJSONArray("points") ?: JSONArray()
+                        val startOfDay = java.time.LocalDate.now().atStartOfDay(java.time.ZoneId.systemDefault()).toEpochSecond()
+                        val nowEpoch = System.currentTimeMillis() / 1000
+                        buildList {
+                            for (i in 0 until points.length()) {
+                                val point = points.optJSONObject(i) ?: continue
+                                var time = point.optDouble("time", Double.NaN)
+                                if (time > 1e12) time /= 1000
+                                val value = point.optDouble("value", Double.NaN)
+                                if (time.isFinite() && time >= startOfDay && time <= nowEpoch && value.isFinite()) add(value)
+                            }
+                            result.optDouble("temp", Double.NaN).takeIf { it.isFinite() }?.let { add(it) }
+                        }
+                    }.getOrDefault(emptyList())
+                }
                 lastUpdatedAt = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy · HH:mm", Locale("es", "ES")))
                 prefs.edit().putString("lastUpdatedAt", lastUpdatedAt).apply()
                 status = "Actualizado · ${station.name}"
@@ -603,10 +622,10 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     item {
                         val heroShape = RoundedCornerShape(28.dp)
                         val heroTemp = readings.firstOrNull { it.key == "temp" }
-                        val heroHeat = readings.firstOrNull { it.key == "heat" || it.key == "dew" }
+                        val heroHeat = readings.firstOrNull { it.key == "heat" }
                         val todayValues = todayTemperatureValues.filter { it.isFinite() }
-                        val heroMax = if (todayValues.size >= 2) String.format(Locale.getDefault(), "%.1f °C", todayValues.maxOrNull()) else "Sin datos suficientes"
-                        val heroMin = if (todayValues.size >= 2) String.format(Locale.getDefault(), "%.1f °C", todayValues.minOrNull()) else "Sin datos suficientes"
+                        val heroMax = if (todayValues.isNotEmpty()) String.format(Locale.getDefault(), "%.1f °C", todayValues.maxOrNull()) else "Sin datos suficientes"
+                        val heroMin = if (todayValues.isNotEmpty()) String.format(Locale.getDefault(), "%.1f °C", todayValues.minOrNull()) else "Sin datos suficientes"
                         Box(Modifier.fillMaxWidth().clip(heroShape).background(Brush.linearGradient(if (light) listOf(Color(0xFFD8F0FF), Color(0xFFB9D5F4), Color(0xFFDCE6FA)) else listOf(Color(0xFF17466B), Color(0xFF183650), Color(0xFF24375C)))).border(1.dp, if (light) Color(0xFFB4D4E9) else Color(0xFF3B6485), heroShape)) {
                             Column(Modifier.padding(if (density == "compact") 18.dp else 24.dp), verticalArrangement = Arrangement.spacedBy(15.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
