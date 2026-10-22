@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -382,7 +383,13 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
         }
     }
 
-    LaunchedEffect(selectedId) { if (readings.isEmpty()) refreshCurrent() }
+    LaunchedEffect(selectedId) {
+        refreshCurrent()
+        while (true) {
+            delay(5 * 60 * 1000L)
+            refreshCurrent()
+        }
+    }
 
     MaterialTheme(colorScheme = if (light) lightColorScheme(primary = accentColor, background = bg, surface = card, onSurface = fg) else darkColorScheme(primary = accentColor, background = bg, surface = card, onSurface = fg)) {
         Column(Modifier.fillMaxSize().background(bg)) {
