@@ -81,6 +81,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     var historyPeriod by remember { mutableStateOf("week") }
     var analysisVariable by remember { mutableStateOf("temp") }
     var analysisResults by remember { mutableStateOf<List<StationAnalysis>>(emptyList()) }
+    var analysisSelectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var analysisMessage by remember { mutableStateOf("Selecciona las estaciones guardadas para comparar sus condiciones.") }
     var status by remember { mutableStateOf("Listo para consultar la estación") }
     var loading by remember { mutableStateOf(false) }
@@ -190,7 +191,9 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
         }
     }
     fun refreshAnalysis() {
-        if (stations.isEmpty()) { analysisMessage = "Añade primero una estación en Mis estaciones."; return }
+        val selectedStations = stations.filter { analysisSelectedIds.isEmpty() || analysisSelectedIds.contains(it.id) }
+        if (selectedStations.size < 2) { analysisMessage = "Selecciona al menos dos estaciones para comparar."; return }
+        if (selectedStations.size > 8) { analysisMessage = "Selecciona un máximo de ocho estaciones cada vez."; return }
         loading = true
         analysisMessage = "Consultando las estaciones guardadas…"
         scope.launch {
@@ -202,7 +205,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
             )
             val meta = metadata[analysisVariable] ?: ("Temperatura" to "°C")
             val results = mutableListOf<StationAnalysis>()
-            for (station in stations) {
+            for (station in selectedStations) {
                 try {
                     val values = withContext(Dispatchers.IO) {
                         if (base.isNotBlank()) {
@@ -388,6 +391,18 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Text("Análisis por estación", color = fg, fontWeight = FontWeight.Bold, fontSize = 20.sp)
                                 Text("Comparador estadístico · estaciones guardadas", color = muted, fontSize = 13.sp)
+                                Text("Estaciones que quieres comparar", color = muted, fontSize = 12.sp)
+                                stations.forEach { station ->
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Checkbox(checked = analysisSelectedIds.isEmpty() || analysisSelectedIds.contains(station.id), onCheckedChange = { checked ->
+                                            analysisSelectedIds = if (checked) analysisSelectedIds + station.id else analysisSelectedIds - station.id
+                                        })
+                                        Column(Modifier.weight(1f)) {
+                                            Text(station.name, color = fg, fontSize = 13.sp)
+                                            Text("ID " + station.id, color = muted, fontSize = 10.sp)
+                                        }
+                                    }
+                                }
                                 Text("Variable de comparación", color = muted, fontSize = 12.sp)
                                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     listOf("temp" to "Temperatura", "hum" to "Humedad", "bar" to "Presión", "wspd" to "Viento", "gust" to "Rachas", "rain" to "Lluvia").forEach { pair ->
@@ -520,7 +535,8 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                         theme = "dark"; accent = "blue"; font = "normal"; density = "comfortable"; motion = false; nearby = true
                         prefs.edit().putString("theme", theme).putString("accent", accent).putString("font", font).putString("density", density).putBoolean("motion", motion).putBoolean("nearby", nearby).apply()
                     }, modifier = Modifier.fillMaxWidth()) { Text("Restablecer apariencia") }
-                    Text("URL del puente de datos", fontWeight = FontWeight.Bold)
+                    OutlinedButton(onClick = { showSettings = false; showStations = true }, modifier = Modifier.fillMaxWidth()) { Text("📍 Gestionar mis estaciones") }
+                    Text("Conexión con los datos de Weathercloud", fontWeight = FontWeight.Bold)
                     OutlinedTextField(apiBase, { apiBase = it }, placeholder = { Text("https://tu-api.example") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                     Button(onClick = { prefs.edit().putString("apiBase", apiBase.trim().trimEnd('/')).apply(); showSettings = false; refreshCurrent() }) { Text("Guardar conexión") }
                 }
