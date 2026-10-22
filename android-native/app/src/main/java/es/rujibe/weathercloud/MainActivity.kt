@@ -41,6 +41,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -363,22 +366,22 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
             val results = mutableListOf<StationAnalysis>()
             for (station in selectedStations) {
                 try {
-                    val summary = withContext(Dispatchers.IO) {
-                        var total = 0
-                        var available = 0
-                        var selectedValues = emptyList<Double>()
-                        metadata.forEach { (key, _) ->
-                            val json = JSONObject(httpGet(base + "/api/history?station_id=" + enc(station.id) + "&variable=" + enc(key) + "&period=month"))
-                            val points = json.optJSONArray("points") ?: JSONArray()
-                            val values = (0 until points.length()).mapNotNull { i ->
-                                val point = points.optJSONObject(i) ?: return@mapNotNull null
-                                val value = point.optDouble("value", Double.NaN)
-                                if (value.isFinite()) value else null
+                    val summary = coroutineScope {
+                        val series = metadata.map { (key, _) ->
+                            async(Dispatchers.IO) {
+                                val json = JSONObject(httpGet(base + "/api/history?station_id=" + enc(station.id) + "&variable=" + enc(key) + "&period=month"))
+                                val points = json.optJSONArray("points") ?: JSONArray()
+                                val values = (0 until points.length()).mapNotNull { i ->
+                                    val point = points.optJSONObject(i) ?: return@mapNotNull null
+                                    val value = point.optDouble("value", Double.NaN)
+                                    if (value.isFinite()) value else null
+                                }
+                                key to values
                             }
-                            total += values.size
-                            if (values.isNotEmpty()) available++
-                            if (key == analysisVariable) selectedValues = values
-                        }
+                        }.awaitAll()
+                        val total = series.sumOf { it.second.size }
+                        val available = series.count { it.second.isNotEmpty() }
+                        val selectedValues = series.firstOrNull { it.first == analysisVariable }?.second ?: emptyList()
                         Triple(total, available, selectedValues)
                     }
                     val values = summary.third
