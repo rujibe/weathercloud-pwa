@@ -1264,7 +1264,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                             Text(weatherEmoji(hour.code, hour.isDay), fontSize = 23.sp)
                                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                                 Text(weatherText(hour.code), color = fg, fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                                                Text("Precip. ${String.format(Locale.getDefault(), \"%.1f\", hour.rainMm)} mm · prob. ${hour.rainChance}% · viento ${hour.wind.toInt()} km/h", color = muted, fontSize = 10.sp)
+                                                Text("Precip. ${String.format(Locale.getDefault(), "%.1f", hour.rainMm)} mm · prob. ${hour.rainChance}% · viento ${hour.wind.toInt()} km/h", color = muted, fontSize = 10.sp)
                                             }
                                             Text(String.format(Locale.getDefault(), "%.0f°", hour.temperature), color = fg, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                                         }
