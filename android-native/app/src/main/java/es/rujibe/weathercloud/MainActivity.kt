@@ -111,6 +111,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     var forecastSearch by remember { mutableStateOf("") }
     var forecastPlaceName by remember { mutableStateOf(prefs.getString("forecastPlaceName", "Madrid, España") ?: "Madrid, España") }
     var history by remember { mutableStateOf<List<Pair<String, Double>>>(emptyList()) }
+    var todayTemperatureValues by remember { mutableStateOf<List<Double>>(emptyList()) }
     var selectedHistoryIndex by remember { mutableIntStateOf(-1) }
     var historyVariable by remember { mutableStateOf("temp") }
     var historyPeriod by remember { mutableStateOf("week") }
@@ -488,6 +489,35 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
         val coarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
         if (fine || coarse) readDeviceLocation() else locationPermissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
     }
+    fun refreshTodayTemperatureRange() {
+        val station = stations.firstOrNull { it.id == selectedId } ?: return
+        scope.launch {
+            try {
+                val points = withContext(Dispatchers.IO) {
+                    val base = apiBase.trim().trimEnd('/')
+                    val root = if (base.isNotBlank()) {
+                        JSONObject(httpGet("$base/api/history?station_id=${enc(station.id)}&variable=temp&period=day"))
+                    } else {
+                        JSONObject(httpGet("https://rujibe.github.io/weathercloud-pwa/history.json"))
+                            .optJSONObject("stations")?.optJSONObject(station.id)?.optJSONObject("series") ?: JSONObject()
+                    }
+                    val arr = root.optJSONArray("points") ?: root.optJSONArray("temp") ?: JSONArray()
+                    (0 until arr.length()).mapNotNull { i ->
+                        val point = arr.optJSONObject(i) ?: return@mapNotNull null
+                        val timestamp = point.optLong("time", -1L)
+                        val value = point.optDouble("value", Double.NaN)
+                        if (timestamp < 0L || !value.isFinite()) null else timestamp to value
+                    }
+                }
+                val zone = java.time.ZoneId.systemDefault()
+                val todayStart = java.time.LocalDate.now(zone).atStartOfDay(zone).toEpochSecond()
+                val tomorrowStart = java.time.LocalDate.now(zone).plusDays(1).atStartOfDay(zone).toEpochSecond()
+                val values = points.filter { it.first >= todayStart && it.first < tomorrowStart }.map { it.second }
+                todayTemperatureValues = if (values.size >= 2) values else emptyList()
+            } catch (_: Exception) { todayTemperatureValues = emptyList() }
+        }
+    }
+
     fun refreshHistory() {
         val station = stations.firstOrNull { it.id == selectedId } ?: return
         loading = true
@@ -506,7 +536,12 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                 }
                 val now = System.currentTimeMillis() / 1000
                 history = when (historyPeriod) {
-                    "day" -> points.filter { it.first.toLongOrNull()?.let { t -> t >= now - 86400 } == true }
+                    "day" -> {
+                        val zone = java.time.ZoneId.systemDefault()
+                        val start = java.time.LocalDate.now(zone).atStartOfDay(zone).toEpochSecond()
+                        val end = java.time.LocalDate.now(zone).plusDays(1).atStartOfDay(zone).toEpochSecond()
+                        points.filter { it.first.toLongOrNull()?.let { t -> t >= start && t < end } == true }
+                    }
                     "yesterday" -> {
                         val zone = java.time.ZoneId.systemDefault()
                         val start = java.time.LocalDate.now().minusDays(1).atStartOfDay(zone).toEpochSecond()
@@ -522,7 +557,8 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
         }
     }
 
-    LaunchedEffect(selectedId) { refreshCurrent() }
+    LaunchedEffect(selectedId) { refreshCurrent(); refreshHistory(); refreshTodayTemperatureRange() }
+    LaunchedEffect(Unit) { refreshForecast(); requestDeviceLocation() }
     LaunchedEffect(Unit) {
         while (true) {
             delay(5 * 60 * 1000L)
@@ -561,9 +597,9 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                         val heroShape = RoundedCornerShape(28.dp)
                         val heroTemp = readings.firstOrNull { it.key == "temp" }
                         val heroHeat = readings.firstOrNull { it.key == "heat" || it.key == "dew" }
-                        val todayValues = history.filter { it.second.isFinite() }.map { it.second }
-                        val heroMax = if (historyVariable == "temp" && historyPeriod == "day" && todayValues.isNotEmpty()) String.format(Locale.getDefault(), "%.1f °C", todayValues.maxOrNull()) else "—"
-                        val heroMin = if (historyVariable == "temp" && historyPeriod == "day" && todayValues.isNotEmpty()) String.format(Locale.getDefault(), "%.1f °C", todayValues.minOrNull()) else "—"
+                        val todayValues = todayTemperatureValues.filter { it.isFinite() }
+                        val heroMax = if (todayValues.size >= 2) String.format(Locale.getDefault(), "%.1f °C", todayValues.maxOrNull()) else "Sin datos suficientes"
+                        val heroMin = if (todayValues.size >= 2) String.format(Locale.getDefault(), "%.1f °C", todayValues.minOrNull()) else "Sin datos suficientes"
                         Box(Modifier.fillMaxWidth().clip(heroShape).background(Brush.linearGradient(if (light) listOf(Color(0xFFD8F0FF), Color(0xFFB9D5F4), Color(0xFFDCE6FA)) else listOf(Color(0xFF17466B), Color(0xFF183650), Color(0xFF24375C)))).border(1.dp, if (light) Color(0xFFB4D4E9) else Color(0xFF3B6485), heroShape)) {
                             Column(Modifier.padding(if (density == "compact") 18.dp else 24.dp), verticalArrangement = Arrangement.spacedBy(15.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -584,6 +620,8 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                                         persistStations()
                                                         stationMenuExpanded = false
                                                         refreshCurrent()
+                                                        refreshHistory()
+                                                        refreshTodayTemperatureRange()
                                                     })
                                                 }
                                                 DropdownMenuItem(text = { Text("Gestionar mis estaciones") }, onClick = { stationMenuExpanded = false; showStations = true })
@@ -735,6 +773,19 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                                     Text(pair.first, color = muted, fontSize = 11.sp)
                                                     Text(String.format(Locale.getDefault(), "%.1f %s", pair.second, historyUnit), color = fg, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                                                 }
+                                            }
+                                        }
+                                    }
+                                    if (historyVariable == "rain") {
+                                        val rainTotalMm = history.sumOf { it.second.coerceAtLeast(0.0) }
+                                        val rainTotal = rainTotalMm * if (historyUnitChoice == "in") (1.0 / 25.4) else 1.0
+                                        Surface(color = if (light) Color(0xFFEAF4FD) else Color(0xFF0B1C2D), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                                            Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                                                Column {
+                                                    Text("Lluvia acumulada · " + when (historyPeriod) { "day" -> "hoy desde 00:00"; "yesterday" -> "ayer"; "week" -> "7 días"; else -> "30 días" }, color = muted, fontSize = 11.sp)
+                                                    Text(String.format(Locale.getDefault(), "%.1f %s", rainTotal, if (historyUnitChoice == "in") "in" else "mm"), color = fg, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                                                }
+                                                Text("☂", color = accentColor, fontSize = 22.sp)
                                             }
                                         }
                                     }
@@ -975,16 +1026,6 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                         }
                                     }
                                 }
-                            }
-                        }
-                    }
-                    item {
-                        Surface(color = card, shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(22.dp))) {
-                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                Text("Tu ubicación", color = fg, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                                Text(forecastPlaceName, color = muted, fontSize = 12.sp)
-                                Text("Lat. $forecastLat · Lon. $forecastLon", color = muted, fontSize = 11.sp)
-                                OutlinedButton(onClick = { requestDeviceLocation() }, modifier = Modifier.fillMaxWidth()) { Text("⌖ Detectar mi ubicación") }
                             }
                         }
                     }
