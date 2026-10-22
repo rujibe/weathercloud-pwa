@@ -218,7 +218,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                 showAllForecastHours = false
                 val cur = data.optJSONObject("current")
                 if (cur != null) {
-                    forecastNow = ForecastHour(cur.optString("time").substringAfter('T'), cur.optInt("weather_code"), cur.optDouble("temperature_2m"), cur.optInt("precipitation_probability"), cur.optDouble("precipitation"), cur.optDouble("wind_speed_10m"), cur.optDouble("wind_gusts_10m"))
+                    forecastNow = ForecastHour(cur.optString("time").substringAfter('T'), cur.optInt("weather_code"), cur.optDouble("temperature_2m"), cur.optInt("precipitation_probability"), cur.optDouble("precipitation"), cur.optDouble("wind_speed_10m"), cur.optDouble("wind_gusts_10m"), isDay = (cur.optString("time").substringAfter('T').take(2).toIntOrNull() ?: java.time.LocalTime.now().hour) in 7..19)
                     status = "Previsión cargada · ahora ${cur.optDouble("temperature_2m").toInt()}°C · viento ${cur.optDouble("wind_speed_10m").toInt()} km/h"
                 }
             } catch (e: Exception) { status = "Error al cargar previsión: ${e.message}" }
@@ -1177,6 +1177,32 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     }
                 }
             }
+        }
+        if (metricInfo != null) {
+            val metric = metricInfo!!
+            val explanation = when (metric.key) {
+                "temp" -> "Temperatura del aire medida por la estación, normalmente en una zona ventilada y protegida del sol directo."
+                "hum" -> "Humedad relativa: porcentaje de vapor de agua presente en el aire respecto al máximo posible a esa temperatura."
+                "bar" -> "Presión atmosférica, expresada en hPa. Ayuda a seguir cambios de tiempo; para comparar lugares influye la altitud."
+                "wspd" -> "Velocidad del viento registrada por la estación, expresada aquí en km/h."
+                "gust" -> "Racha de viento: velocidad máxima alcanzada por ráfagas durante el intervalo que registra la estación."
+                "rain" -> "Lluvia acumulada en milímetros. 1 mm equivale a 1 litro de agua por metro cuadrado."
+                "rainrate" -> "Intensidad de lluvia: ritmo de precipitación estimado en ese momento, en mm/h; no es el total acumulado."
+                "wdir" -> "Dirección del viento en grados: 0°/360° norte, 90° este, 180° sur y 270° oeste."
+                "solar" -> "Radiación solar recibida, en W/m². Suele bajar con nubes, sombras y durante la noche."
+                "uv" -> "Índice ultravioleta: indicador de la intensidad de radiación UV y del riesgo de exposición solar."
+                "dew" -> "Punto de rocío: temperatura a la que el aire alcanzaría la saturación y empezaría a condensar."
+                "heat" -> "Sensación térmica estimada a partir de las condiciones disponibles; puede diferir de la temperatura real."
+                "tempin" -> "Temperatura medida dentro del edificio o recinto donde está instalado el sensor interior."
+                "humin" -> "Humedad relativa medida por el sensor situado en el interior."
+                else -> "Dato meteorológico comunicado por la estación. Su significado exacto puede depender del sensor y del modelo."
+            }
+            AlertDialog(onDismissRequest = { metricInfo = null }, title = { Text(metric.label) },
+                text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("${metric.value} ${metric.unit}".trim(), style = MaterialTheme.typography.titleLarge, color = accentColor)
+                    Text(explanation)
+                } },
+                confirmButton = { TextButton(onClick = { metricInfo = null }) { Text("Entendido") } })
         }
         if (metricInfo != null) {
             val metric = metricInfo!!
