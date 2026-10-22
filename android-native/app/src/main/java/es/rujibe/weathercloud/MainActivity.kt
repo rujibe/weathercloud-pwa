@@ -690,80 +690,85 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                         }
                     }
                 }
-                "Pronóstico" -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                "Pronóstico" -> LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
                     item {
-                        Surface(color = card, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
-                            Column(Modifier.padding(16.dp)) {
-                                Text("Previsión para 7 días", color = fg, fontWeight = FontWeight.Bold, fontSize = 19.sp)
-                                Text("Lugar: $forecastPlaceName", color = muted, fontSize = 12.sp)
-                                OutlinedTextField(forecastSearch, { forecastSearch = it }, label = { Text("Buscar ciudad o lugar") }, placeholder = { Text("Ej. Mérida, España") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Button(onClick = { searchForecastPlace() }, enabled = !loading, colors = ButtonDefaults.buttonColors(containerColor = accentColor)) { Text("Buscar lugar", color = Navy) }
-                                    OutlinedButton(onClick = { requestDeviceLocation() }, enabled = !loading) { Text("Usar mi ubicación") }
-                                }
-                                OutlinedButton(onClick = { refreshForecast() }, modifier = Modifier.fillMaxWidth()) { Text("Actualizar previsión") }
-                                if (forecastSearchResults.isNotEmpty()) {
-                                    Text("Resultados de búsqueda", color = fg, fontWeight = FontWeight.SemiBold)
-                                    forecastSearchResults.forEach { place ->
-                                        TextButton(onClick = {
-                                            forecastLat = place.latitude.toString()
-                                            forecastLon = place.longitude.toString()
-                                            forecastPlaceName = listOf(place.name, place.admin, place.country).filter { it.isNotBlank() }.distinct().joinToString(", ")
-                                            forecastSearchResults = emptyList()
-                                            prefs.edit().putString("forecastLat", forecastLat).putString("forecastLon", forecastLon).putString("forecastPlaceName", forecastPlaceName).apply()
-                                            refreshForecast()
-                                        }, modifier = Modifier.fillMaxWidth()) {
-                                            Column(Modifier.fillMaxWidth()) {
-                                                Text(place.name, color = fg)
-                                                Text(listOf(place.admin, place.country).filter { it.isNotBlank() }.distinct().joinToString(", "), color = muted, fontSize = 11.sp)
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text("Previsión para 7 días", color = fg, fontWeight = FontWeight.Bold, fontSize = 24.sp, letterSpacing = (-0.4).sp)
+                                Text("Busca un lugar o consulta el tiempo en tu ubicación.", color = muted, fontSize = 13.sp)
+                            }
+                            Surface(color = card, shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(22.dp))) {
+                                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                                        Surface(color = if (light) Color(0xFFE5F2FC) else Color(0xFF1A3550), shape = RoundedCornerShape(12.dp)) {
+                                            Box(Modifier.size(42.dp), contentAlignment = Alignment.Center) { Text("⌕", color = accentColor, fontSize = 25.sp) }
+                                        }
+                                        Column(Modifier.weight(1f)) {
+                                            Text("Buscar un lugar", color = fg, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                                            Text("Elige una ciudad para consultar su previsión", color = muted, fontSize = 11.sp)
+                                        }
+                                    }
+                                    OutlinedTextField(forecastSearch, { forecastSearch = it }, label = { Text("Ciudad o lugar") }, placeholder = { Text("Ej. Mérida, España") }, modifier = Modifier.fillMaxWidth(), singleLine = true, shape = RoundedCornerShape(14.dp))
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                                        Button(onClick = { searchForecastPlace() }, enabled = !loading, colors = ButtonDefaults.buttonColors(containerColor = accentColor), shape = RoundedCornerShape(12.dp), modifier = Modifier.weight(1f)) { Text("Buscar lugar", color = Navy) }
+                                        OutlinedButton(onClick = { requestDeviceLocation() }, enabled = !loading, shape = RoundedCornerShape(12.dp), modifier = Modifier.weight(1f)) { Text("⌖ Mi ubicación", fontSize = 12.sp) }
+                                    }
+                                    if (forecastSearchResults.isNotEmpty()) {
+                                        Text("Resultados de búsqueda", color = fg, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                        forecastSearchResults.forEach { place ->
+                                            TextButton(onClick = {
+                                                forecastLat = place.latitude.toString()
+                                                forecastLon = place.longitude.toString()
+                                                forecastPlaceName = listOf(place.name, place.admin, place.country).filter { it.isNotBlank() }.distinct().joinToString(", ")
+                                                forecastSearchResults = emptyList()
+                                                prefs.edit().putString("forecastLat", forecastLat).putString("forecastLon", forecastLon).putString("forecastPlaceName", forecastPlaceName).apply()
+                                                refreshForecast()
+                                            }, modifier = Modifier.fillMaxWidth()) {
+                                                Column(Modifier.fillMaxWidth()) {
+                                                    Text(place.name, color = fg, fontWeight = FontWeight.SemiBold)
+                                                    Text(listOf(place.admin, place.country).filter { it.isNotBlank() }.distinct().joinToString(", "), color = muted, fontSize = 11.sp)
+                                                }
                                             }
                                         }
                                     }
-                                }
-                                Text("Coordenadas de la ubicación seleccionada", color = muted, fontSize = 12.sp)
-                                Spacer(Modifier.height(8.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    OutlinedTextField(forecastLat, { forecastLat = it; prefs.edit().putString("forecastLat", it).apply() }, label = { Text("Latitud") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
-                                    OutlinedTextField(forecastLon, { forecastLon = it; prefs.edit().putString("forecastLon", it).apply() }, label = { Text("Longitud") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
-                                }
-                                Text("Fuente: Open-Meteo · máximas, mínimas, lluvia y estado diario.", color = muted, fontSize = 12.sp)
-                            }
-                        }
-                    }
-                    items(forecast) { day ->
-                        Surface(color = card, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(18.dp))) {
-                            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                                Column(Modifier.width(74.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text(day.date.takeLast(5), color = muted, fontSize = 11.sp)
-                                    Text(weatherEmoji(day.code), fontSize = 27.sp)
-                                }
-                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                                    Text(weatherText(day.code), color = fg, fontWeight = FontWeight.SemiBold, fontSize = (14 * scale).sp)
-                                    Text("Lluvia " + day.rainChance + "% · " + String.format(Locale.getDefault(), "%.1f", day.rainMm) + " mm", color = muted, fontSize = 12.sp)
-                                }
-                                Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text(day.maximum.toString() + "°", color = fg, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                                    Text(day.minimum.toString() + "°", color = muted, fontSize = 15.sp)
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        OutlinedTextField(forecastLat, { forecastLat = it; prefs.edit().putString("forecastLat", it).apply() }, label = { Text("Latitud") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
+                                        OutlinedTextField(forecastLon, { forecastLon = it; prefs.edit().putString("forecastLon", it).apply() }, label = { Text("Longitud") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true)
+                                    }
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Column(Modifier.weight(1f)) {
+                                            Text("Ubicación seleccionada", color = muted, fontSize = 11.sp)
+                                            Text(forecastPlaceName, color = fg, fontWeight = FontWeight.Medium, fontSize = 13.sp)
+                                        }
+                                        TextButton(onClick = { refreshForecast() }, enabled = !loading) { Text("↻ Actualizar", color = accentColor) }
+                                    }
                                 }
                             }
                         }
                     }
                     forecastNow?.let { current ->
                         item {
-                            Surface(color = if (light) Color(0xFFDCEEFF) else Color(0xFF153451), shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFB4D4E9) else Color(0xFF3B6485), RoundedCornerShape(22.dp))) {
-                                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    Text("AHORA · $forecastPlaceName", color = if (light) Color(0xFF315D7B) else Color(0xFFB9F6DC), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                        Text(weatherEmoji(current.code), fontSize = 48.sp)
-                                        Column(Modifier.weight(1f)) {
-                                            Text(String.format(Locale.getDefault(), "%.0f°", current.temperature), color = fg, fontSize = 38.sp, fontWeight = FontWeight.Bold)
+                            Surface(color = if (light) Color(0xFFDCEEFF) else Color(0xFF153451), shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFB4D4E9) else Color(0xFF3B6485), RoundedCornerShape(24.dp))) {
+                                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                                        Box(Modifier.size(7.dp).clip(RoundedCornerShape(50)).background(Color(0xFF65E0AE)))
+                                        Text("EL TIEMPO AHORA", color = if (light) Color(0xFF315D7B) else Color(0xFFB9F6DC), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                                        Spacer(Modifier.weight(1f))
+                                        Text("Open-Meteo", color = muted, fontSize = 10.sp)
+                                    }
+                                    Text(forecastPlaceName, color = fg, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(17.dp)) {
+                                        Text(weatherEmoji(current.code), fontSize = 58.sp)
+                                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                            Text(String.format(Locale.getDefault(), "%.0f°", current.temperature), color = fg, fontSize = 48.sp, fontWeight = FontWeight.Bold, letterSpacing = (-2).sp)
                                             Text(weatherText(current.code), color = muted, fontSize = 14.sp)
+                                            Text("Actualizado · ${current.time}", color = muted, fontSize = 11.sp)
                                         }
                                     }
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         listOf("Lluvia" to (current.rainChance.toString() + "%"), "Viento" to (current.wind.toInt().toString() + " km/h"), "Rachas" to (current.gust.toInt().toString() + " km/h")).forEach { metric ->
-                                            Surface(color = if (light) Color(0xFFEAF4FD) else Color(0xFF0B1C2D), shape = RoundedCornerShape(12.dp), modifier = Modifier.weight(1f)) {
-                                                Column(Modifier.padding(10.dp)) {
+                                            Surface(color = if (light) Color(0xFFEAF4FD) else Color(0xFF0B1C2D), shape = RoundedCornerShape(14.dp), modifier = Modifier.weight(1f)) {
+                                                Column(Modifier.padding(horizontal = 10.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                                     Text(metric.first, color = muted, fontSize = 10.sp)
                                                     Text(metric.second, color = fg, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                                                 }
@@ -776,25 +781,91 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     }
                     if (hourlyForecast.isNotEmpty()) {
                         item {
-                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text(if (showAllForecastHours) "Próximas 48 horas" else "Próximas horas", color = fg, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                                TextButton(onClick = { showAllForecastHours = !showAllForecastHours }) { Text(if (showAllForecastHours) "Ver menos" else "Ver 48 h", color = accentColor) }
-                            }
-                        }
-                        items(if (showAllForecastHours) hourlyForecast else hourlyForecast.take(8)) { hour ->
-                            Surface(color = card, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(14.dp))) {
-                                Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    Text(hour.time, color = muted, fontSize = 12.sp, modifier = Modifier.width(46.dp))
-                                    Text(weatherEmoji(hour.code), fontSize = 24.sp)
-                                    Column(Modifier.weight(1f)) {
-                                        Text(String.format(Locale.getDefault(), "%.0f°", hour.temperature), color = fg, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                                        Text(weatherText(hour.code), color = muted, fontSize = 11.sp)
+                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                        Text("Próximas horas", color = fg, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                                        Text("Desliza para ver cómo evoluciona el tiempo", color = muted, fontSize = 12.sp)
                                     }
-                                    Column(horizontalAlignment = Alignment.End) {
-                                        Text("💧 " + hour.rainChance + "%", color = accentColor, fontSize = 11.sp)
-                                        Text("💨 " + hour.wind.toInt(), color = muted, fontSize = 11.sp)
+                                    Text("◷", color = accentColor, fontSize = 25.sp)
+                                }
+                                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                                    hourlyForecast.take(24).forEach { hour ->
+                                        Surface(color = if (light) Color(0xFFF9FBFE) else Color(0xFF151F31), shape = RoundedCornerShape(21.dp), modifier = Modifier.width(112.dp).border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF2D3B52), RoundedCornerShape(21.dp))) {
+                                            Column(Modifier.padding(horizontal = 9.dp, vertical = 14.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                                                Text(hour.time, color = muted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                                Text(weatherEmoji(hour.code), fontSize = 28.sp)
+                                                Text(weatherText(hour.code), color = muted, fontSize = 10.sp, maxLines = 2, minLines = 2)
+                                                Text(String.format(Locale.getDefault(), "%.0f°", hour.temperature), color = fg, fontSize = 23.sp, fontWeight = FontWeight.SemiBold)
+                                                Text("☂ ${hour.rainChance}%", color = if (light) Color(0xFF477BB3) else Color(0xFFB7D7FF), fontSize = 11.sp)
+                                                Text("↗ ${hour.wind.toInt()} km/h", color = muted, fontSize = 10.sp)
+                                            }
+                                        }
                                     }
                                 }
+                                TextButton(onClick = { showAllForecastHours = !showAllForecastHours }, modifier = Modifier.align(Alignment.End)) {
+                                    Text(if (showAllForecastHours) "Mostrar menos" else "Ver próximas 48 horas", color = accentColor)
+                                }
+                                if (showAllForecastHours) {
+                                    Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                                        hourlyForecast.drop(24).forEach { hour ->
+                                            Surface(color = card, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(14.dp))) {
+                                                Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(11.dp)) {
+                                                    Text(hour.time, color = muted, fontSize = 12.sp, modifier = Modifier.width(45.dp))
+                                                    Text(weatherEmoji(hour.code), fontSize = 22.sp)
+                                                    Column(Modifier.weight(1f)) {
+                                                        Text(String.format(Locale.getDefault(), "%.0f°", hour.temperature), color = fg, fontWeight = FontWeight.SemiBold)
+                                                        Text(weatherText(hour.code), color = muted, fontSize = 11.sp)
+                                                    }
+                                                    Text("${hour.rainChance}% lluvia", color = accentColor, fontSize = 11.sp)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    item {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                    Text("Próximos 7 días", color = fg, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                                    Text("Pulsa un día para ver su previsión hora a hora", color = muted, fontSize = 12.sp)
+                                }
+                                Text("☼", color = accentColor, fontSize = 25.sp)
+                            }
+                            Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                                forecast.forEach { day ->
+                                    Surface(color = card, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(18.dp)).clickable { selectedForecastDay = day.date }) {
+                                        Row(Modifier.padding(horizontal = 14.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(11.dp)) {
+                                            Column(Modifier.width(65.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                Text(if (day.date == java.time.LocalDate.now().toString()) "Hoy" else runCatching { java.time.LocalDate.parse(day.date).format(java.time.format.DateTimeFormatter.ofPattern("EEE d MMM", Locale("es", "ES"))) }.getOrDefault(day.date.takeLast(5)), color = fg, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                                Text(day.date.takeLast(5), color = muted, fontSize = 10.sp)
+                                            }
+                                            Text(weatherEmoji(day.code), fontSize = 27.sp)
+                                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                Text(weatherText(day.code), color = fg, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                                                Text("Lluvia ${day.rainChance}% · ${String.format(Locale.getDefault(), "%.1f", day.rainMm)} mm", color = muted, fontSize = 10.sp)
+                                            }
+                                            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                                Text("${day.maximum}°", color = fg, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+                                                Text("${day.minimum}°", color = muted, fontSize = 14.sp)
+                                            }
+                                            Text("›", color = accentColor, fontSize = 23.sp)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    item {
+                        Surface(color = card, shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(22.dp))) {
+                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Text("Tu ubicación", color = fg, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                                Text(forecastPlaceName, color = muted, fontSize = 12.sp)
+                                Text("Lat. $forecastLat · Lon. $forecastLon", color = muted, fontSize = 11.sp)
+                                OutlinedButton(onClick = { requestDeviceLocation() }, modifier = Modifier.fillMaxWidth()) { Text("⌖ Detectar mi ubicación") }
                             }
                         }
                     }
@@ -983,6 +1054,52 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(when(label) { "Estación" -> "☁"; "Pronóstico" -> "▦"; else -> "⌁" }, color = if (tab == label) accentColor else muted, fontSize = 20.sp)
                             Text(label, color = if (tab == label) accentColor else muted, fontSize = 11.sp, fontWeight = if (tab == label) FontWeight.Bold else FontWeight.Normal)
+                        }
+                    }
+                }
+            }
+        }
+        if (selectedForecastDay != null) {
+            val selectedDay = forecast.firstOrNull { it.date == selectedForecastDay }
+            val dayHours = hourlyForecast.filter { it.date == selectedForecastDay }
+            Dialog(onDismissRequest = { selectedForecastDay = null }) {
+                Surface(color = card, shape = RoundedCornerShape(26.dp), modifier = Modifier.fillMaxWidth().heightIn(max = 680.dp)) {
+                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text("Previsión por horas", color = fg, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                                Text(selectedDay?.let { if (it.date == java.time.LocalDate.now().toString()) "Hoy · ${it.date}" else runCatching { java.time.LocalDate.parse(it.date).format(java.time.format.DateTimeFormatter.ofPattern("EEEE d 'de' MMMM", Locale("es", "ES"))) }.getOrDefault(it.date) } ?: "", color = muted, fontSize = 12.sp)
+                            }
+                            TextButton(onClick = { selectedForecastDay = null }) { Text("Cerrar", color = accentColor) }
+                        }
+                        if (selectedDay != null) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Text(weatherEmoji(selectedDay.code), fontSize = 42.sp)
+                                Column(Modifier.weight(1f)) {
+                                    Text(weatherText(selectedDay.code), color = fg, fontWeight = FontWeight.SemiBold)
+                                    Text("Máx. ${selectedDay.maximum}° · Mín. ${selectedDay.minimum}° · Lluvia ${selectedDay.rainChance}%", color = muted, fontSize = 12.sp)
+                                }
+                            }
+                        }
+                        Divider(color = if (light) Color(0xFFDCE5EF) else Color(0xFF263A52))
+                        if (dayHours.isEmpty()) {
+                            Text("No hay horas disponibles para ese día en la previsión cargada.", color = muted, fontSize = 13.sp)
+                        } else {
+                            LazyColumn(Modifier.weight(1f, fill = false), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                                items(dayHours) { hour ->
+                                    Surface(color = if (light) Color(0xFFF4F8FC) else Color(0xFF0B1C2D), shape = RoundedCornerShape(13.dp), modifier = Modifier.fillMaxWidth()) {
+                                        Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(11.dp)) {
+                                            Text(hour.time, color = muted, fontSize = 12.sp, modifier = Modifier.width(43.dp))
+                                            Text(weatherEmoji(hour.code), fontSize = 23.sp)
+                                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                                Text(weatherText(hour.code), color = fg, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                                                Text("Lluvia ${hour.rainChance}% · viento ${hour.wind.toInt()} km/h", color = muted, fontSize = 10.sp)
+                                            }
+                                            Text(String.format(Locale.getDefault(), "%.0f°", hour.temperature), color = fg, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
