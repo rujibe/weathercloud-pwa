@@ -553,11 +553,48 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                             }
                         }
                     }
+                    forecastNow?.let { current ->
+                        item {
+                            Surface(color = if (light) Color(0xFFDCEEFF) else Color(0xFF153451), shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFB4D4E9) else Color(0xFF3B6485), RoundedCornerShape(22.dp))) {
+                                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    Text("AHORA · $forecastPlaceName", color = if (light) Color(0xFF315D7B) else Color(0xFFB9F6DC), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                        Text(weatherEmoji(current.code), fontSize = 48.sp)
+                                        Column(Modifier.weight(1f)) {
+                                            Text(String.format(Locale.getDefault(), "%.0f°", current.temperature), color = fg, fontSize = 38.sp, fontWeight = FontWeight.Bold)
+                                            Text(weatherText(current.code), color = muted, fontSize = 14.sp)
+                                        }
+                                    }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        listOf("Lluvia" to (current.rainChance.toString() + "%"), "Viento" to (current.wind.toInt().toString() + " km/h"), "Rachas" to (current.gust.toInt().toString() + " km/h")).forEach { metric ->
+                                            Surface(color = if (light) Color(0xFFEAF4FD) else Color(0xFF0B1C2D), shape = RoundedCornerShape(12.dp), modifier = Modifier.weight(1f)) {
+                                                Column(Modifier.padding(10.dp)) {
+                                                    Text(metric.first, color = muted, fontSize = 10.sp)
+                                                    Text(metric.second, color = fg, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                     if (hourlyForecast.isNotEmpty()) {
-                        item { Text("Próximas horas · $forecastPlaceName", color = fg, fontWeight = FontWeight.Bold, fontSize = 18.sp) }
+                        item { Text("Previsión por horas · $forecastPlaceName", color = fg, fontWeight = FontWeight.Bold, fontSize = 18.sp) }
                         items(hourlyForecast) { hour ->
                             Surface(color = card, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(14.dp))) {
-                                Text(hour, Modifier.padding(14.dp), color = fg, fontSize = (13 * scale).sp)
+                                Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    Text(hour.time, color = muted, fontSize = 12.sp, modifier = Modifier.width(46.dp))
+                                    Text(weatherEmoji(hour.code), fontSize = 24.sp)
+                                    Column(Modifier.weight(1f)) {
+                                        Text(String.format(Locale.getDefault(), "%.0f°", hour.temperature), color = fg, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                        Text(weatherText(hour.code), color = muted, fontSize = 11.sp)
+                                    }
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text("💧 " + hour.rainChance + "%", color = accentColor, fontSize = 11.sp)
+                                        Text("💨 " + hour.wind.toInt(), color = muted, fontSize = 11.sp)
+                                    }
+                                }
                             }
                         }
                     }
