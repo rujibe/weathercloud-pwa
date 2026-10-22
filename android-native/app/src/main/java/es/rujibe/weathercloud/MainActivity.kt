@@ -506,14 +506,19 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                         val point = arr.optJSONObject(i) ?: return@mapNotNull null
                         val timestamp = point.optLong("time", -1L)
                         val value = point.optDouble("value", Double.NaN)
-                        if (timestamp < 0L || !value.isFinite()) null else timestamp to value
+                        if (timestamp < 0L || !value.isFinite()) null else {
+                            val minimum = point.optDouble("min", value)
+                            val maximum = point.optDouble("max", value)
+                            Triple(timestamp, minimum, maximum)
+                        }
                     }
                 }
                 val zone = java.time.ZoneId.systemDefault()
                 val todayStart = java.time.LocalDate.now(zone).atStartOfDay(zone).toEpochSecond()
                 val tomorrowStart = java.time.LocalDate.now(zone).plusDays(1).atStartOfDay(zone).toEpochSecond()
-                val values = points.filter { it.first >= todayStart && it.first < tomorrowStart }.map { it.second }
-                todayTemperatureValues = if (values.size >= 2) values else emptyList()
+                val todayPoints = points.filter { it.first >= todayStart && it.first < tomorrowStart }
+                val values = todayPoints.flatMap { listOf(it.second, it.third) }.filter { it.isFinite() }
+                todayTemperatureValues = if (values.isNotEmpty()) values else emptyList()
             } catch (_: Exception) { todayTemperatureValues = emptyList() }
         }
     }
