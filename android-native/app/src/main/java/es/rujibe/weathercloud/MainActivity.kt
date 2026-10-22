@@ -459,7 +459,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                         Surface(color = card, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(18.dp)) {
                                 Text("Histórico meteorológico", color = fg, fontWeight = FontWeight.Bold)
-                                Text("Datos de la estación seleccionada", color = muted, fontSize = 12.sp)
+                                Text("Datos de la estación seleccionada · ${when (historyPeriod) { "day" -> "hoy"; "yesterday" -> "ayer"; "week" -> "últimos 7 días"; else -> "últimos 30 días" }}", color = muted, fontSize = 12.sp)
                                 if (history.isNotEmpty()) {
                                     val values = history.map { it.second }
                                     val unit = when (historyVariable) { "temp" -> "°C"; "hum" -> "%"; "bar" -> "hPa"; "wspd", "gust" -> "km/h"; "rain" -> "mm"; else -> "" }
@@ -477,13 +477,13 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                 Text("Variable", color = muted, fontSize = 12.sp)
                                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     listOf("temp" to "Temperatura", "hum" to "Humedad", "bar" to "Presión", "wspd" to "Viento", "rain" to "Lluvia", "gust" to "Rachas").forEach { (key, label) ->
-                                        FilterChip(selected = historyVariable == key, onClick = { historyVariable = key }, label = { Text(label) })
+                                        FilterChip(selected = historyVariable == key, onClick = { historyVariable = key; refreshHistory() }, label = { Text(label) })
                                     }
                                 }
                                 Text("Periodo", color = muted, fontSize = 12.sp)
                                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     listOf("day" to "Hoy", "yesterday" to "Ayer", "week" to "7 días", "month" to "30 días").forEach { (key, label) ->
-                                        FilterChip(selected = historyPeriod == key, onClick = { historyPeriod = key }, label = { Text(label) })
+                                        FilterChip(selected = historyPeriod == key, onClick = { historyPeriod = key; refreshHistory() }, label = { Text(label) })
                                     }
                                 }
                                 Button(onClick = { refreshHistory() }, colors = ButtonDefaults.buttonColors(containerColor = accentColor), modifier = Modifier.padding(top = 8.dp)) { Text("Actualizar gráfico", color = Navy) }
@@ -497,7 +497,8 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                         val points = values.mapIndexed { i, v -> androidx.compose.ui.geometry.Offset(if (values.size == 1) 0f else i * size.width / (values.size - 1), size.height - ((v - min) / span * (size.height - 12f)).toFloat() - 6f) }
                                         for (i in 0 until points.lastIndex) drawLine(accentColor, points[i], points[i + 1], strokeWidth = 3f, cap = StrokeCap.Round)
                                     }
-                                    Text("Mín. ${String.format(Locale.getDefault(), "%.1f", min)} °C · Máx. ${String.format(Locale.getDefault(), "%.1f", max)} °C", color = muted)
+                                    val historyUnit = when (historyVariable) { "temp" -> "°C"; "hum" -> "%"; "bar" -> "hPa"; "wspd", "gust" -> "km/h"; "rain" -> "mm"; else -> "" }
+                                    Text("Mín. ${String.format(Locale.getDefault(), "%.1f", min)} $historyUnit · Máx. ${String.format(Locale.getDefault(), "%.1f", max)} $historyUnit", color = muted)
                                 }
                             }
                         }
