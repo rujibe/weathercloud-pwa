@@ -76,7 +76,7 @@ data class ValidationMetric(val label: String, val score: Double?, val mae: Doub
 data class StationValidationResult(val station: Station, val place: String, val overall: Double?, val coverage: Int, val metrics: List<ValidationMetric>, val error: String = "")
 data class NearbyStation(val name: String, val id: String, val city: String, val distanceKm: Double, val updateMinutes: Int?)
 data class ForecastDay(val date: String, val code: Int, val minimum: Int, val maximum: Int, val rainChance: Int, val rainMm: Double)
-data class ForecastHour(val time: String, val code: Int, val temperature: Double, val rainChance: Int, val rainMm: Double, val wind: Double, val gust: Double, val date: String = "")
+data class ForecastHour(val time: String, val code: Int, val temperature: Double, val rainChance: Int, val rainMm: Double, val wind: Double, val gust: Double, val date: String = "", val isDay: Boolean = true)
 data class ForecastPlace(val name: String, val latitude: Double, val longitude: Double, val admin: String, val country: String)
 
 @Composable
@@ -202,6 +202,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                 val temps = h.getJSONArray("temperature_2m")
                 val probs = h.getJSONArray("precipitation_probability")
                 val codes = h.getJSONArray("weather_code")
+                val dayFlags = h.optJSONArray("is_day")
                 val winds = h.getJSONArray("wind_speed_10m")
                 val gusts = h.getJSONArray("wind_gusts_10m")
                 val rains = h.getJSONArray("precipitation")
@@ -211,7 +212,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                 hourlyForecast = (0 until times.length()).filter { i ->
                     runCatching { !java.time.LocalDateTime.parse(times.optString(i)).isBefore(currentHour) }.getOrDefault(false)
                 }.map { i ->
-                    ForecastHour(times.optString(i).substringAfter('T'), codes.optInt(i), temps.optDouble(i), probs.optInt(i), rains.optDouble(i), winds.optDouble(i), gusts.optDouble(i), times.optString(i).substringBefore('T'))
+                    ForecastHour(times.optString(i).substringAfter('T'), codes.optInt(i), temps.optDouble(i), probs.optInt(i), rains.optDouble(i), winds.optDouble(i), gusts.optDouble(i), times.optString(i).substringBefore('T'), dayFlags?.optInt(i, if (times.optString(i).substringAfter('T').take(2).toIntOrNull() in 7..19) 1 else 0) == 1)
                 }
                 showAllForecastHours = false
                 val cur = data.optJSONObject("current")
@@ -870,7 +871,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                     }
                                     Text(forecastPlaceName, color = fg, fontSize = 14.sp, fontWeight = FontWeight.Medium)
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(17.dp)) {
-                                        Text(weatherEmoji(current.code), fontSize = 58.sp)
+                                        Text(weatherEmoji(current.code, current.isDay), fontSize = 58.sp)
                                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                                             Text(String.format(Locale.getDefault(), "%.0f°", current.temperature), color = fg, fontSize = 48.sp, fontWeight = FontWeight.Bold, letterSpacing = (-2).sp)
                                             Text(weatherText(current.code), color = muted, fontSize = 14.sp)
@@ -906,7 +907,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                         Surface(color = if (light) Color(0xFFF9FBFE) else Color(0xFF151F31), shape = RoundedCornerShape(21.dp), modifier = Modifier.width(112.dp).border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF2D3B52), RoundedCornerShape(21.dp))) {
                                             Column(Modifier.padding(horizontal = 9.dp, vertical = 14.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(9.dp)) {
                                                 Text(hour.time, color = muted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                                                Text(weatherEmoji(hour.code), fontSize = 28.sp)
+                                                Text(weatherEmoji(hour.code, hour.isDay), fontSize = 28.sp)
                                                 Text(weatherText(hour.code), color = muted, fontSize = 10.sp, maxLines = 2, minLines = 2)
                                                 Text(String.format(Locale.getDefault(), "%.0f°", hour.temperature), color = fg, fontSize = 23.sp, fontWeight = FontWeight.SemiBold)
                                                 Text("☂ ${hour.rainChance}%", color = if (light) Color(0xFF477BB3) else Color(0xFFB7D7FF), fontSize = 11.sp)
@@ -1314,8 +1315,8 @@ private fun httpGet(url: String): String {
         body
     } finally { connection.disconnect() }
 }
-private fun weatherEmoji(code: Int): String = when (code) {
-    0 -> "☀️"; 1 -> "🌤️"; 2 -> "⛅"; 3 -> "☁️"; 45, 48 -> "🌫️"
+private fun weatherEmoji(code: Int, isDay: Boolean = true): String = when (code) {
+    0 -> if (isDay) "☀️" else "🌙"; 1 -> if (isDay) "🌤️" else "🌙"; 2 -> if (isDay) "⛅" else "☁️"; 3 -> "☁️"; 45, 48 -> "🌫️"
     51, 53, 55, 56, 57 -> "🌦️"; 61, 63, 65, 66, 67, 80, 81, 82 -> "🌧️"
     71, 73, 75, 77, 85, 86 -> "❄️"; 95, 96, 99 -> "⛈️"; else -> "🌡️"
 }
