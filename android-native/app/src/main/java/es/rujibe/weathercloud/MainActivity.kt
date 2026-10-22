@@ -826,7 +826,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                 }
                                 Text("Variable de comparación", color = muted, fontSize = 12.sp)
                                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    listOf("temp" to "Temperatura", "hum" to "Humedad", "bar" to "Presión", "wspd" to "Viento", "gust" to "Rachas", "rain" to "Lluvia").forEach { pair ->
+                                    listOf("temp" to "Temperatura", "hum" to "Humedad", "bar" to "Presión", "wspd" to "Viento", "gust" to "Rachas", "rain" to "Lluvia", "rainrate" to "Intensidad de lluvia", "solar" to "Radiación solar", "uvi" to "Índice UV").forEach { pair ->
                                         FilterChip(selected = analysisVariable == pair.first, onClick = { analysisVariable = pair.first }, label = { Text(pair.second) })
                                     }
                                 }
