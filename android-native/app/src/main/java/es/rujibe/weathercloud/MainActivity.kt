@@ -52,6 +52,7 @@ class MainActivity : ComponentActivity() {
 data class Station(val name: String, val id: String)
 data class Reading(val key: String, val label: String, val value: String, val unit: String, val icon: String)
 data class StationAnalysis(val station: Station, val value: Double?, val unit: String, val label: String, val error: String = "")
+data class NearbyStation(val name: String, val id: String, val city: String, val distanceKm: Double, val updateMinutes: Int?)
 
 @Composable
 fun WeathercloudApp(prefs: android.content.SharedPreferences) {
@@ -83,6 +84,9 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     var analysisResults by remember { mutableStateOf<List<StationAnalysis>>(emptyList()) }
     var analysisSelectedIds by remember { mutableStateOf<Set<String>>(stations.map { it.id }.toSet()) }
     var analysisMessage by remember { mutableStateOf("Selecciona las estaciones guardadas para comparar sus condiciones.") }
+    var nearbyRadius by remember { mutableStateOf("10") }
+    var nearbyMessage by remember { mutableStateOf("Selecciona un lugar en Previsión y conecta el Worker para buscar estaciones.") }
+    var nearbyResults by remember { mutableStateOf<List<NearbyStation>>(emptyList()) }
     var status by remember { mutableStateOf("Listo para consultar la estación") }
     var loading by remember { mutableStateOf(false) }
     var forecastLat by remember { mutableStateOf(prefs.getString("forecastLat", "40.4168") ?: "40.4168") }
@@ -187,6 +191,42 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     refreshForecast()
                 }
             } catch (e: Exception) { status = "No se pudo buscar el lugar: ${e.message}" }
+            loading = false
+        }
+    }
+    fun searchNearbyStations() {
+        val base = apiBase.trim().trimEnd('/')
+        val lat = forecastLat.toDoubleOrNull()
+        val lon = forecastLon.toDoubleOrNull()
+        if (base.isBlank()) { nearbyMessage = "Conecta el Worker de Cloudflare desde Ajustes para buscar estaciones."; return }
+        if (lat == null || lon == null) { nearbyMessage = "Selecciona una ubicación válida en Previsión."; return }
+        loading = true
+        nearbyMessage = "Buscando estaciones públicas cercanas…"
+        scope.launch {
+            try {
+                val body = withContext(Dispatchers.IO) {
+                    httpGet(base + "/api/nearby?latitude=" + lat + "&longitude=" + lon + "&distance_km=" + nearbyRadius)
+                }
+                val root = if (body.trimStart().startsWith("{")) JSONObject(body) else JSONObject()
+                val records = if (body.trimStart().startsWith("[")) JSONArray(body) else root.optJSONArray("devices") ?: root.optJSONArray("results") ?: root.optJSONArray("stations") ?: JSONArray()
+                val parsed = (0 until records.length()).mapNotNull { i ->
+                    val item = records.optJSONObject(i) ?: return@mapNotNull null
+                    val id = item.optString("code", item.optString("id", ""))
+                    val lat2 = item.optDouble("latitude", Double.NaN)
+                    val lon2 = item.optDouble("longitude", Double.NaN)
+                    if (id.isBlank() || !id.matches(Regex("[0-9]{1,20}")) || lat2.isNaN() || lon2.isNaN() || item.optString("type", "device") != "device") null
+                    else {
+                        val dLat = Math.toRadians(lat2 - lat)
+                        val dLon = Math.toRadians(lon2 - lon)
+                        val h = kotlin.math.sin(dLat / 2).let { it * it } + kotlin.math.cos(Math.toRadians(lat)) * kotlin.math.cos(Math.toRadians(lat2)) * kotlin.math.sin(dLon / 2).let { it * it }
+                        val distance = 6371.0 * 2 * kotlin.math.atan2(kotlin.math.sqrt(h), kotlin.math.sqrt((1 - h).coerceAtLeast(0.0)))
+                        val update = if (item.has("update")) item.optDouble("update", Double.NaN).takeIf { it.isFinite() }?.div(60)?.toInt() else null
+                        NearbyStation(item.optString("name", item.optString("city", "Estación " + id)), id, item.optString("city", ""), distance, update)
+                    }
+                }.sortedBy { it.distanceKm }.take(30)
+                nearbyResults = parsed
+                nearbyMessage = if (parsed.isEmpty()) "Weathercloud no ha devuelto estaciones públicas con ubicación en este radio. Prueba ampliarlo." else parsed.size.toString() + " estaciones encontradas, ordenadas por distancia."
+            } catch (e: Exception) { nearbyMessage = "No se pudo completar la búsqueda: " + e.message }
             loading = false
         }
     }
