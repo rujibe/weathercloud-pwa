@@ -720,6 +720,36 @@
       body>#forecast-hours-modal .forecast-hour-table tbody td{font-size:10px!important}
     }
   
+
+    /* Pulido móvil: filas compactas, jerarquía clara y scroll vertical del listado. */
+    @media(max-width:540px){
+      body>#forecast-hours-modal:not(.hidden) .forecast-hours-window{width:calc(100vw - 20px)!important;height:84dvh!important;max-height:84dvh!important;border-radius:16px!important}
+      body>#forecast-hours-modal .forecast-hours-window-head{padding:11px 13px!important}
+      body>#forecast-hours-modal .forecast-hours-window-head h3{font-size:16px!important;line-height:1.25!important}
+      body>#forecast-hours-modal .forecast-hours-window-head p{font-size:11px!important}
+      body>#forecast-hours-modal .forecast-hours-modal-body{flex:1 1 0!important;height:0!important;min-height:0!important;max-height:none!important;overflow-y:auto!important;overflow-x:hidden!important;padding:8px!important;overscroll-behavior-y:contain!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important}
+      body>#forecast-hours-modal .forecast-hours-table-wrap{width:100%!important;overflow:visible!important}
+      body>#forecast-hours-modal .forecast-hour-table{display:block!important;width:100%!important;min-width:0!important;table-layout:auto!important;border-spacing:0!important;font-size:12px!important}
+      body>#forecast-hours-modal .forecast-hour-table thead{display:none!important}
+      body>#forecast-hours-modal .forecast-hour-table tbody{display:flex!important;flex-direction:column!important;gap:5px!important}
+      body>#forecast-hours-modal .forecast-hour-table tbody tr{display:grid!important;grid-template-columns:48px minmax(0,1fr) auto!important;grid-template-areas:"time condition temp" "prob rain wind"!important;align-items:center!important;gap:5px 8px!important;padding:8px 9px!important;border:1px solid #30415a!important;border-radius:10px!important;background:#19273a!important}
+      body>#forecast-hours-modal .forecast-hour-table tbody td{display:block!important;min-width:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;white-space:normal!important;overflow-wrap:normal!important;word-break:normal!important;font-size:11px!important;line-height:1.25!important;font-weight:500!important}
+      body>#forecast-hours-modal .forecast-hour-table tbody td:nth-child(1){grid-area:time;font-size:12px!important;font-weight:750!important;font-variant-numeric:tabular-nums;white-space:nowrap!important}
+      body>#forecast-hours-modal .forecast-hour-table tbody td:nth-child(2){grid-area:condition;font-size:11px!important;line-height:1.2!important}
+      body>#forecast-hours-modal .forecast-hour-table tbody td:nth-child(3){grid-area:temp;text-align:right;font-size:14px!important;font-weight:750!important;white-space:nowrap!important}
+      body>#forecast-hours-modal .forecast-hour-table tbody td:nth-child(4){grid-area:prob;color:#c6ddff!important;white-space:nowrap!important}
+      body>#forecast-hours-modal .forecast-hour-table tbody td:nth-child(4)::before{content:"Prob. ";color:#91a6c3}
+      body>#forecast-hours-modal .forecast-hour-table tbody td:nth-child(5){grid-area:rain;color:#c6ddff!important;white-space:nowrap!important}
+      body>#forecast-hours-modal .forecast-hour-table tbody td:nth-child(5)::before{content:"Lluvia ";color:#91a6c3}
+      body>#forecast-hours-modal .forecast-hour-table tbody td:nth-child(6){grid-area:wind;text-align:right;color:#d4e3f8!important;white-space:nowrap!important}
+      body>#forecast-hours-modal .forecast-hour-table tbody td:nth-child(6)::before{content:"Viento ";color:#91a6c3}
+    }
+    @media(max-width:360px){
+      body>#forecast-hours-modal .forecast-hour-table tbody tr{grid-template-columns:43px minmax(0,1fr) auto!important;gap:4px 6px!important;padding:7px!important}
+      body>#forecast-hours-modal .forecast-hour-table tbody td{font-size:10px!important}
+      body>#forecast-hours-modal .forecast-hour-table tbody td:nth-child(3){font-size:13px!important}
+    }
+  
 </style>
 </head>
 <body>
