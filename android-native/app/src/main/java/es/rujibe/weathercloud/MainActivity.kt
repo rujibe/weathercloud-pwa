@@ -189,6 +189,43 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
             loading = false
         }
     }
+    fun refreshAnalysis() {
+        if (stations.isEmpty()) { analysisMessage = "Añade primero una estación en Mis estaciones."; return }
+        loading = true
+        analysisMessage = "Consultando las estaciones guardadas…"
+        scope.launch {
+            val base = apiBase.trim().trimEnd('/')
+            val metadata = mapOf(
+                "temp" to ("Temperatura" to "°C"), "hum" to ("Humedad" to "%"),
+                "bar" to ("Presión" to "hPa"), "wspd" to ("Viento" to "km/h"),
+                "gust" to ("Rachas" to "km/h"), "rain" to ("Lluvia" to "mm")
+            )
+            val meta = metadata[analysisVariable] ?: ("Temperatura" to "°C")
+            val results = mutableListOf<StationAnalysis>()
+            for (station in stations) {
+                try {
+                    val values = withContext(Dispatchers.IO) {
+                        if (base.isNotBlank()) {
+                            JSONObject(httpGet(base + "/api/current?station_id=" + enc(station.id)))
+                        } else {
+                            val all = JSONObject(httpGet("https://rujibe.github.io/weathercloud-pwa/weather.json"))
+                            all.optJSONObject("stations")?.optJSONObject(station.id)?.optJSONObject("readings")
+                                ?: throw IllegalStateException("Sin datos publicados")
+                        }
+                    }
+                    val raw = values.opt(analysisVariable)
+                    val number = if (raw == null || raw == JSONObject.NULL) null else raw.toString().toDoubleOrNull()
+                    results.add(StationAnalysis(station, number, meta.second, meta.first, if (number == null) "Sin lectura" else ""))
+                } catch (e: Exception) {
+                    results.add(StationAnalysis(station, null, meta.second, meta.first, "No disponible"))
+                }
+            }
+            analysisResults = results
+            val count = results.count { it.value != null }
+            analysisMessage = count.toString() + " de " + results.size + " estaciones con datos para " + meta.first.lowercase(Locale.getDefault()) + "."
+            loading = false
+        }
+    }
     fun refreshHistory() {
         val station = stations.firstOrNull { it.id == selectedId } ?: return
         loading = true
