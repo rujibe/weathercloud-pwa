@@ -51,6 +51,7 @@ class MainActivity : ComponentActivity() {
 
 data class Station(val name: String, val id: String)
 data class Reading(val key: String, val label: String, val value: String, val unit: String, val icon: String)
+data class StationAnalysis(val station: Station, val value: Double?, val unit: String, val label: String, val error: String = "")
 
 @Composable
 fun WeathercloudApp(prefs: android.content.SharedPreferences) {
@@ -78,6 +79,9 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     var history by remember { mutableStateOf<List<Pair<String, Double>>>(emptyList()) }
     var historyVariable by remember { mutableStateOf("temp") }
     var historyPeriod by remember { mutableStateOf("week") }
+    var analysisVariable by remember { mutableStateOf("temp") }
+    var analysisResults by remember { mutableStateOf<List<StationAnalysis>>(emptyList()) }
+    var analysisMessage by remember { mutableStateOf("Selecciona las estaciones guardadas para comparar sus condiciones.") }
     var status by remember { mutableStateOf("Listo para consultar la estación") }
     var loading by remember { mutableStateOf(false) }
     var forecastLat by remember { mutableStateOf(prefs.getString("forecastLat", "40.4168") ?: "40.4168") }
