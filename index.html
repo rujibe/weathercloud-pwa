@@ -689,6 +689,37 @@
       body>#forecast-hours-modal .forecast-hour-table{min-width:640px!important}
     }
   
+
+    /* Tabla horaria compacta y desplazamiento vertical real dentro del modal. */
+    body>#forecast-hours-modal:not(.hidden) .forecast-hours-window{height:min(760px,82dvh)!important;max-height:82dvh!important;min-height:0!important}
+    body>#forecast-hours-modal:not(.hidden) .forecast-hours-modal-body{flex:1 1 0!important;height:0!important;min-height:0!important;max-height:none!important;overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important}
+    body>#forecast-hours-modal .forecast-hours-table-wrap{width:100%!important;max-height:none!important;overflow-x:auto!important;overflow-y:visible!important}
+    body>#forecast-hours-modal .forecast-hour-table{width:100%!important;min-width:640px!important;table-layout:auto!important;font-size:12px!important}
+    body>#forecast-hours-modal .forecast-hour-table th,body>#forecast-hours-modal .forecast-hour-table td{padding:7px 8px!important;line-height:1.25!important}
+    @media(max-width:540px){
+      body>#forecast-hours-modal:not(.hidden) .forecast-hours-window{width:calc(100vw - 16px)!important;height:86dvh!important;max-height:86dvh!important}
+      body>#forecast-hours-modal .forecast-hours-modal-body{padding:7px!important;overflow-y:auto!important;overflow-x:hidden!important}
+      body>#forecast-hours-modal .forecast-hours-table-wrap{overflow:visible!important}
+      body>#forecast-hours-modal .forecast-hour-table{display:block!important;width:100%!important;min-width:0!important;table-layout:auto!important;font-size:12px!important;border-spacing:0!important}
+      body>#forecast-hours-modal .forecast-hour-table thead{display:none!important}
+      body>#forecast-hours-modal .forecast-hour-table tbody{display:flex!important;flex-direction:column!important;gap:6px!important}
+      body>#forecast-hours-modal .forecast-hour-table tbody tr{display:grid!important;grid-template-columns:54px minmax(0,1fr) 66px!important;grid-template-areas:"time condition temp" "prob rain wind"!important;align-items:center!important;gap:4px 7px!important;padding:8px 9px!important;border:1px solid #2c3d55!important;border-radius:11px!important;background:#1b293d!important}
+      body>#forecast-hours-modal .forecast-hour-table tbody td{display:block!important;min-width:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;white-space:normal!important;overflow-wrap:anywhere!important;font-size:11px!important;line-height:1.25!important;font-weight:500!important}
+      body>#forecast-hours-modal .forecast-hour-table tbody td:nth-child(1){grid-area:time;font-size:12px!important;font-weight:750!important;white-space:nowrap!important}
+      body>#forecast-hours-modal .forecast-hour-table tbody td:nth-child(2){grid-area:condition;font-size:11px!important}
+      body>#forecast-hours-modal .forecast-hour-table tbody td:nth-child(3){grid-area:temp;text-align:right;font-size:13px!important;font-weight:750!important;white-space:nowrap!important}
+      body>#forecast-hours-modal .forecast-hour-table tbody td:nth-child(4){grid-area:prob;color:#b9d9ff!important}
+      body>#forecast-hours-modal .forecast-hour-table tbody td:nth-child(4)::before{content:"Prob. ";color:#91a6c3}
+      body>#forecast-hours-modal .forecast-hour-table tbody td:nth-child(5){grid-area:rain;color:#b9d9ff!important}
+      body>#forecast-hours-modal .forecast-hour-table tbody td:nth-child(5)::before{content:"Lluvia ";color:#91a6c3}
+      body>#forecast-hours-modal .forecast-hour-table tbody td:nth-child(6){grid-area:wind;text-align:right;color:#d4e3f8!important;white-space:nowrap!important}
+      body>#forecast-hours-modal .forecast-hour-table tbody td:nth-child(6)::before{content:"Viento ";color:#91a6c3}
+    }
+    @media(max-width:360px){
+      body>#forecast-hours-modal .forecast-hour-table tbody tr{grid-template-columns:48px minmax(0,1fr) 58px!important;gap:4px 5px!important;padding:7px!important}
+      body>#forecast-hours-modal .forecast-hour-table tbody td{font-size:10px!important}
+    }
+  
 </style>
 </head>
 <body>
