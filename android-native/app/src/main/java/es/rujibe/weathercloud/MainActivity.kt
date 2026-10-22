@@ -693,12 +693,21 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                                         Text("AHORA EN", color = if (light) Color(0xFF315D7B) else Color(0xFFC1EAFF), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.7.sp)
                                         Box {
+                                            val activeStation = stations.firstOrNull { it.id == selectedId }
                                             TextButton(onClick = { stationMenuExpanded = true }, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)) {
-                                                Text("⌄  " + listOfNotNull((stations.firstOrNull { it.id == selectedId }?.name ?: "Mi estación").takeIf { it.isNotBlank() }, stations.firstOrNull { it.id == selectedId }?.city?.takeIf { it.isNotBlank() }).distinct().joinToString(" · "), color = if (light) Color(0xFF14243A) else TextMain, fontSize = 22.sp, fontWeight = FontWeight.SemiBold, maxLines = 3)
+                                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                    Text("⌄  " + (activeStation?.name?.takeIf { it.isNotBlank() } ?: "Mi estación"), color = if (light) Color(0xFF14243A) else TextMain, fontSize = 22.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
+                                                    activeStation?.city?.takeIf { it.isNotBlank() }?.let { Text(it, color = muted, fontSize = 14.sp, fontWeight = FontWeight.Normal, maxLines = 1) }
+                                                }
                                             }
                                             DropdownMenu(expanded = stationMenuExpanded, onDismissRequest = { stationMenuExpanded = false }) {
                                                 stations.forEach { station ->
-                                                    DropdownMenuItem(text = { Text(station.name) }, onClick = {
+                                                    DropdownMenuItem(text = {
+                                                        Column {
+                                                            Text(station.name)
+                                                            if (station.city.isNotBlank()) Text(station.city, color = muted, fontSize = 12.sp)
+                                                        }
+                                                    }, onClick = {
                                                         selectedId = station.id
                                                         persistStations()
                                                         stationMenuExpanded = false
@@ -839,14 +848,42 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 Text("Histórico meteorológico", color = fg, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                                 Text("Evolución de la estación seleccionada", color = muted, fontSize = 12.sp)
-                                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    listOf("temp" to "Temperatura", "hum" to "Humedad", "bar" to "Presión", "wspd" to "Viento", "gust" to "Rachas", "wdir" to "Dirección viento", "rain" to "Lluvia", "rainrate" to "Intensidad lluvia", "solar" to "Radiación solar", "uv" to "Índice UV", "tempin" to "Temperatura interior", "humin" to "Humedad interior").forEach { (key, label) ->
-                                        FilterChip(selected = historyVariable == key, onClick = { historyVariable = key; historyUnitChoice = "auto"; prefs.edit().putString("historyUnitChoice", "auto").apply(); refreshHistory() }, label = { Text(label) })
+                                val graphVariables = listOf("temp" to "Temperatura", "hum" to "Humedad", "bar" to "Presión", "wspd" to "Viento", "gust" to "Rachas", "wdir" to "Dirección viento", "rain" to "Lluvia", "rainrate" to "Intensidad lluvia", "solar" to "Radiación solar", "uv" to "Índice UV", "tempin" to "Temperatura interior", "humin" to "Humedad interior")
+                                val graphPeriods = listOf("day" to "Hoy", "yesterday" to "Ayer", "week" to "7 días", "month" to "30 días")
+                                var graphVariableMenuExpanded by remember { mutableStateOf(false) }
+                                var graphPeriodMenuExpanded by remember { mutableStateOf(false) }
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text("Parámetro", color = muted, fontSize = 12.sp)
+                                        Box {
+                                            OutlinedButton(onClick = { graphVariableMenuExpanded = true }, modifier = Modifier.fillMaxWidth()) {
+                                                Text("⌄  " + (graphVariables.firstOrNull { it.first == historyVariable }?.second ?: "Temperatura"), maxLines = 1)
+                                            }
+                                            DropdownMenu(expanded = graphVariableMenuExpanded, onDismissRequest = { graphVariableMenuExpanded = false }) {
+                                                graphVariables.forEach { (key, label) -> DropdownMenuItem(text = { Text(label) }, onClick = {
+                                                    historyVariable = key
+                                                    historyUnitChoice = "auto"
+                                                    prefs.edit().putString("historyUnitChoice", "auto").apply()
+                                                    graphVariableMenuExpanded = false
+                                                    refreshHistory()
+                                                }) }
+                                            }
+                                        }
                                     }
-                                }
-                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    listOf("day" to "Hoy", "yesterday" to "Ayer", "week" to "7 días", "month" to "30 días").forEach { (key, label) ->
-                                        FilterChip(selected = historyPeriod == key, onClick = { historyPeriod = key; refreshHistory() }, label = { Text(label) })
+                                    Column(Modifier.weight(1f)) {
+                                        Text("Periodo", color = muted, fontSize = 12.sp)
+                                        Box {
+                                            OutlinedButton(onClick = { graphPeriodMenuExpanded = true }, modifier = Modifier.fillMaxWidth()) {
+                                                Text("⌄  " + (graphPeriods.firstOrNull { it.first == historyPeriod }?.second ?: "7 días"), maxLines = 1)
+                                            }
+                                            DropdownMenu(expanded = graphPeriodMenuExpanded, onDismissRequest = { graphPeriodMenuExpanded = false }) {
+                                                graphPeriods.forEach { (key, label) -> DropdownMenuItem(text = { Text(label) }, onClick = {
+                                                    historyPeriod = key
+                                                    graphPeriodMenuExpanded = false
+                                                    refreshHistory()
+                                                }) }
+                                            }
+                                        }
                                     }
                                 }
                                 val unitOptions = when (historyVariable) { "temp" -> listOf("auto" to "°C", "°F" to "°F"); "wspd", "gust" -> listOf("auto" to "km/h", "m/s" to "m/s", "mph" to "mph", "kn" to "nudos"); "rain" -> listOf("auto" to "mm", "in" to "in"); else -> listOf("auto" to when (historyVariable) { "hum" -> "%"; "bar" -> "hPa"; else -> "" }) }
@@ -1495,29 +1532,20 @@ private fun formatWindDirection(value: String): String {
         val token = raw.uppercase(Locale.ROOT).replace(" ", "").replace("-", "")
         val cardinal = when (token) {
             "N", "NORTH", "NORTE" -> "Norte"
-            "NNE", "NORTHNORTHEAST" -> "Nornoreste"
-            "NE", "NORTHEAST" -> "Noreste"
-            "ENE", "EASTNORTHEAST" -> "Estenoreste"
-            "E", "EAST", "ESTE" -> "Este"
-            "ESE", "EASTSOUTHEAST" -> "Estesureste"
-            "SE", "SOUTHEAST", "SURESTE" -> "Sureste"
-            "SSE", "SOUTHSOUTHEAST" -> "Sursureste"
-            "S", "SOUTH", "SUR" -> "Sur"
-            "SSW", "SOUTHSOUTHWEST" -> "Sursuroeste"
-            "SW", "SOUTHWEST", "SUROESTE" -> "Suroeste"
-            "WSW", "WESTSOUTHWEST" -> "Oestesuroeste"
-            "W", "WEST", "OESTE" -> "Oeste"
-            "WNW", "WESTNORTHWEST" -> "Oestenoroeste"
-            "NW", "NORTHWEST", "NOROESTE" -> "Noroeste"
-            "NNW", "NORTHNORTHWEST" -> "Nornoroeste"
+            "NNE", "NORTHNORTHEAST", "NE", "NORTHEAST" -> "Noreste"
+            "ENE", "EASTNORTHEAST", "E", "EAST", "ESTE", "ESE", "EASTSOUTHEAST" -> "Este"
+            "SE", "SOUTHEAST", "SURESTE", "SSE", "SOUTHSOUTHEAST" -> "Sureste"
+            "S", "SOUTH", "SUR", "SSW", "SOUTHSOUTHWEST" -> "Sur"
+            "SW", "SOUTHWEST", "SUROESTE", "WSW", "WESTSOUTHWEST", "W", "WEST", "OESTE" -> "Oeste"
+            "WNW", "WESTNORTHWEST", "NW", "NORTHWEST", "NOROESTE", "NNW", "NORTHNORTHWEST" -> "Noroeste"
             else -> raw
         }
         return cardinal
     }
     val normalized = ((numeric % 360.0) + 360.0) % 360.0
-    val directions = listOf("Norte", "Nornoreste", "Noreste", "Estenoreste", "Este", "Estesureste", "Sureste", "Sursureste", "Sur", "Sursuroeste", "Suroeste", "Oestesuroeste", "Oeste", "Oestenoroeste", "Noroeste", "Nornoroeste")
-    val index = kotlin.math.floor((normalized + 11.25) / 22.5).toInt() % 16
-    return "${directions[index]} (${normalized.toInt()}°)"
+    val directions = listOf("Norte", "Noreste", "Este", "Sureste", "Sur", "Suroeste", "Oeste", "Noroeste")
+    val index = kotlin.math.floor((normalized + 22.5) / 45.0).toInt() % 8
+    return directions[index]
 }
 
 private fun loadStations(prefs: android.content.SharedPreferences): List<Station> {
