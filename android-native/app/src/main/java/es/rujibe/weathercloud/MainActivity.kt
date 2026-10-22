@@ -453,9 +453,13 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
             if (last != null) {
                 forecastLat = last.latitude.toString()
                 forecastLon = last.longitude.toString()
-                forecastPlaceName = "Mi ubicación"
-                prefs.edit().putString("forecastLat", forecastLat).putString("forecastLon", forecastLon).putString("forecastPlaceName", forecastPlaceName).apply()
-                refreshForecast()
+                forecastPlaceName = "Buscando ubicación…"
+                prefs.edit().putString("forecastLat", forecastLat).putString("forecastLon", forecastLon).apply()
+                scope.launch {
+                    forecastPlaceName = withContext(Dispatchers.IO) { reverseGeocode(last.latitude, last.longitude) }
+                    prefs.edit().putString("forecastPlaceName", forecastPlaceName).apply()
+                    refreshForecast()
+                }
             } else {
                 nearbyMessage = "Obteniendo la ubicación del dispositivo…"
                 val listener = object : LocationListener {
@@ -463,9 +467,12 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                         manager.removeUpdates(this)
                         forecastLat = location.latitude.toString()
                         forecastLon = location.longitude.toString()
-                        forecastPlaceName = "Mi ubicación"
-                        prefs.edit().putString("forecastLat", forecastLat).putString("forecastLon", forecastLon).putString("forecastPlaceName", forecastPlaceName).apply()
-                        refreshForecast()
+                        forecastPlaceName = "Buscando ubicación…"
+                        scope.launch {
+                            forecastPlaceName = withContext(Dispatchers.IO) { reverseGeocode(location.latitude, location.longitude) }
+                            prefs.edit().putString("forecastPlaceName", forecastPlaceName).apply()
+                            refreshForecast()
+                        }
                     }
                 }
                 manager.requestLocationUpdates(provider, 0L, 0f, listener, Looper.getMainLooper())
@@ -1275,6 +1282,16 @@ private fun ChoiceRow(options: List<Pair<String, String>>, selected: String, onS
             FilterChip(selected = selected == value, onClick = { onSelect(value) }, label = { Text(label) })
         }
     }
+}
+
+private fun reverseGeocode(latitude: Double, longitude: Double): String {
+    return try {
+        val json = JSONObject(httpGet("https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$latitude&lon=$longitude&zoom=10&addressdetails=1&accept-language=es"))
+        val address = json.optJSONObject("address") ?: JSONObject()
+        val locality = listOf("city", "town", "village", "municipality", "county", "suburb").firstNotNullOfOrNull { key -> address.optString(key).takeIf { it.isNotBlank() } }
+        val region = listOf("state", "province", "state_district").firstNotNullOfOrNull { key -> address.optString(key).takeIf { it.isNotBlank() && it != locality } }
+        listOf(locality, region, address.optString("country").takeIf { it.isNotBlank() }).filterNotNull().distinct().joinToString(", ").ifBlank { json.optString("display_name").split(",").take(3).joinToString(", ") }.ifBlank { "Mi ubicación" }
+    } catch (_: Exception) { "Mi ubicación" }
 }
 
 private fun loadStations(prefs: android.content.SharedPreferences): List<Station> {
