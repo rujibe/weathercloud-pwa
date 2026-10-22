@@ -100,6 +100,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     var stationMenuExpanded by remember { mutableStateOf(false) }
     var newName by remember { mutableStateOf("") }
     var newId by remember { mutableStateOf("") }
+    var newCity by remember { mutableStateOf("") }
     var readings by remember { mutableStateOf<List<Reading>>(emptyList()) }
     var lastUpdatedAt by remember { mutableStateOf(prefs.getString("lastUpdatedAt", "") ?: "") }
     var historyUnitChoice by remember { mutableStateOf(prefs.getString("historyUnitChoice", "auto") ?: "auto") }
@@ -1491,12 +1492,13 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                         }
                     }
                     OutlinedTextField(newName, { newName = it }, label = { Text("Nombre de estación") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                    OutlinedTextField(newCity, { newCity = it }, label = { Text("Localidad (opcional)") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                     OutlinedTextField(newId, { newId = it }, label = { Text("ID de Weathercloud") }, modifier = Modifier.fillMaxWidth(), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                     Button(onClick = {
                         val id = newId.trim()
                         if (id.isNotEmpty() && stations.none { it.id == id }) {
-                            stations = stations + Station(newName.trim().ifBlank { "Estación ${id.takeLast(4)}" }, id)
-                            selectedId = id; persistStations(); newName = ""; newId = ""
+                            stations = stations + Station(newName.trim().ifBlank { "Estación ${id.takeLast(4)}" }, id, newCity.trim())
+                            selectedId = id; persistStations(); newName = ""; newId = ""; newCity = ""
                         }
                     }) { Text("Añadir estación") }
                 }
