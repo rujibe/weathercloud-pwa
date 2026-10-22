@@ -673,6 +673,22 @@
       #forecast-hours-modal .forecast-hour-table th,#forecast-hours-modal .forecast-hour-table td{padding:6px 7px}
     }
   
+
+    /* Override definitive para evitar que reglas heredadas colapsen el contenido horario a 0px. */
+    body>#forecast-hours-modal:not(.hidden){display:flex!important;position:fixed!important;inset:0!important;z-index:999999!important;align-items:center!important;justify-content:center!important;overflow:hidden!important;padding:12px!important;background:#030a13e8!important}
+    body>#forecast-hours-modal.hidden{display:none!important}
+    body>#forecast-hours-modal .forecast-hours-window{display:flex!important;flex:0 1 auto!important;flex-direction:column!important;width:min(780px,calc(100vw - 24px))!important;height:auto!important;max-height:82dvh!important;min-height:180px!important;overflow:hidden!important}
+    body>#forecast-hours-modal .forecast-hours-modal-body{display:block!important;flex:1 1 auto!important;height:auto!important;min-height:120px!important;max-height:calc(82dvh - 72px)!important;overflow-y:auto!important;overflow-x:auto!important;padding:10px!important;touch-action:pan-y!important}
+    body>#forecast-hours-modal .forecast-hours-table-wrap{display:block!important;overflow-x:auto!important;overflow-y:visible!important;max-height:none!important}
+    body>#forecast-hours-modal .forecast-hour-table{width:100%!important;min-width:640px!important;table-layout:auto!important;font-size:12px!important}
+    body>#forecast-hours-modal .forecast-hour-table th,body>#forecast-hours-modal .forecast-hour-table td{white-space:nowrap!important;padding:7px 8px!important;font-size:12px!important}
+    @media(max-width:540px){
+      body>#forecast-hours-modal:not(.hidden){align-items:center!important;padding:8px!important}
+      body>#forecast-hours-modal .forecast-hours-window{width:calc(100vw - 16px)!important;height:auto!important;max-height:86dvh!important;min-height:180px!important}
+      body>#forecast-hours-modal .forecast-hours-modal-body{flex:1 1 auto!important;height:auto!important;min-height:120px!important;max-height:calc(86dvh - 70px)!important;padding:7px!important}
+      body>#forecast-hours-modal .forecast-hour-table{min-width:640px!important}
+    }
+  
 </style>
 </head>
 <body>
