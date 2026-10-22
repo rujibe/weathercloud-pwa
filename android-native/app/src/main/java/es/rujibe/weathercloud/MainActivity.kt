@@ -1,6 +1,17 @@
 package es.rujibe.weathercloud
 
 import android.os.Bundle
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
+import android.os.Looper
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
@@ -57,6 +68,7 @@ data class NearbyStation(val name: String, val id: String, val city: String, val
 @Composable
 fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     var tab by remember { mutableStateOf("Estación") }
     var theme by remember { mutableStateOf(prefs.getString("theme", "dark") ?: "dark") }
     var accent by remember { mutableStateOf(prefs.getString("accent", "blue") ?: "blue") }
@@ -269,6 +281,49 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
             loading = false
         }
     }
+    fun readDeviceLocation() {
+        val manager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        val fine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        val coarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        if (!fine && !coarse) { status = "Permite la ubicación para consultar tu previsión local."; return }
+        val provider = when {
+            fine && manager.isProviderEnabled(LocationManager.GPS_PROVIDER) -> LocationManager.GPS_PROVIDER
+            manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER) -> LocationManager.NETWORK_PROVIDER
+            else -> null
+        }
+        if (provider == null) { status = "Activa la ubicación del dispositivo e inténtalo de nuevo."; return }
+        try {
+            val last = manager.getLastKnownLocation(provider)
+            if (last != null) {
+                forecastLat = last.latitude.toString()
+                forecastLon = last.longitude.toString()
+                forecastPlaceName = "Mi ubicación"
+                prefs.edit().putString("forecastLat", forecastLat).putString("forecastLon", forecastLon).putString("forecastPlaceName", forecastPlaceName).apply()
+                refreshForecast()
+            } else {
+                nearbyMessage = "Obteniendo la ubicación del dispositivo…"
+                val listener = object : LocationListener {
+                    override fun onLocationChanged(location: Location) {
+                        manager.removeUpdates(this)
+                        forecastLat = location.latitude.toString()
+                        forecastLon = location.longitude.toString()
+                        forecastPlaceName = "Mi ubicación"
+                        prefs.edit().putString("forecastLat", forecastLat).putString("forecastLon", forecastLon).putString("forecastPlaceName", forecastPlaceName).apply()
+                        refreshForecast()
+                    }
+                }
+                manager.requestLocationUpdates(provider, 0L, 0f, listener, Looper.getMainLooper())
+            }
+        } catch (e: SecurityException) { status = "No se ha concedido permiso de ubicación." }
+    }
+    val locationPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
+        if (grants.values.any { it }) readDeviceLocation() else status = "Permiso de ubicación denegado."
+    }
+    fun requestDeviceLocation() {
+        val fine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        val coarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        if (fine || coarse) readDeviceLocation() else locationPermissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+    }
     fun refreshHistory() {
         val station = stations.firstOrNull { it.id == selectedId } ?: return
         loading = true
@@ -434,8 +489,9 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                 OutlinedTextField(forecastSearch, { forecastSearch = it }, label = { Text("Buscar ciudad o lugar") }, placeholder = { Text("Ej. Mérida, España") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Button(onClick = { searchForecastPlace() }, enabled = !loading, colors = ButtonDefaults.buttonColors(containerColor = accentColor)) { Text("Buscar lugar", color = Navy) }
-                                    OutlinedButton(onClick = { refreshForecast() }) { Text("Actualizar previsión") }
+                                    OutlinedButton(onClick = { requestDeviceLocation() }, enabled = !loading) { Text("Usar mi ubicación") }
                                 }
+                                OutlinedButton(onClick = { refreshForecast() }, modifier = Modifier.fillMaxWidth()) { Text("Actualizar previsión") }
                                 Text("Coordenadas de la ubicación seleccionada", color = muted, fontSize = 12.sp)
                                 Spacer(Modifier.height(8.dp))
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
