@@ -66,6 +66,8 @@ class MainActivity : ComponentActivity() {
 data class Station(val name: String, val id: String)
 data class Reading(val key: String, val label: String, val value: String, val unit: String, val icon: String)
 data class StationAnalysis(val station: Station, val value: Double?, val unit: String, val label: String, val error: String = "")
+data class ValidationMetric(val label: String, val score: Double?, val mae: Double?, val count: Int, val unit: String)
+data class StationValidationResult(val station: Station, val place: String, val overall: Double?, val coverage: Int, val metrics: List<ValidationMetric>, val error: String = "")
 data class NearbyStation(val name: String, val id: String, val city: String, val distanceKm: Double, val updateMinutes: Int?)
 data class ForecastDay(val date: String, val code: Int, val minimum: Int, val maximum: Int, val rainChance: Int, val rainMm: Double)
 data class ForecastHour(val time: String, val code: Int, val temperature: Double, val rainChance: Int, val rainMm: Double, val wind: Double, val gust: Double)
@@ -106,6 +108,9 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     var analysisResults by remember { mutableStateOf<List<StationAnalysis>>(emptyList()) }
     var analysisSelectedIds by remember { mutableStateOf<Set<String>>(stations.map { it.id }.toSet()) }
     var analysisMessage by remember { mutableStateOf("Selecciona las estaciones guardadas para comparar sus condiciones.") }
+    var validationStationId by remember { mutableStateOf(selectedId) }
+    var validationMessage by remember { mutableStateOf("Conecta el Worker para comparar los últimos 30 días con el archivo histórico de Open-Meteo.") }
+    var validationResult by remember { mutableStateOf<StationValidationResult?>(null) }
     var nearbyRadius by remember { mutableStateOf("10") }
     var nearbyMessage by remember { mutableStateOf("Selecciona un lugar en Previsión y conecta el Worker para buscar estaciones.") }
     var nearbyResults by remember { mutableStateOf<List<NearbyStation>>(emptyList()) }
@@ -264,6 +269,77 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                 nearbyResults = parsed
                 nearbyMessage = if (parsed.isEmpty()) "Weathercloud no ha devuelto estaciones públicas con ubicación en este radio. Prueba ampliarlo." else parsed.size.toString() + " estaciones encontradas, ordenadas por distancia."
             } catch (e: Exception) { nearbyMessage = "No se pudo completar la búsqueda: " + e.message }
+            loading = false
+        }
+    }
+    fun runHistoricalValidation() {
+        val station = stations.firstOrNull { it.id == validationStationId }
+        if (station == null) { validationMessage = "Selecciona una estación guardada."; return }
+        val base = apiBase.trim().trimEnd('/')
+        if (base.isBlank()) { validationMessage = "Conecta el Worker de Cloudflare en Ajustes para consultar el histórico Weathercloud."; return }
+        loading = true
+        validationMessage = "Comparando observaciones y pronósticos horarios coincidentes de los últimos 30 días…"
+        validationResult = null
+        scope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    val location = JSONObject(httpGet(base + "/api/station?station_id=" + enc(station.id)))
+                    val lat = location.optDouble("latitude", Double.NaN)
+                    val lon = location.optDouble("longitude", Double.NaN)
+                    if (!lat.isFinite() || !lon.isFinite()) throw IllegalStateException("Weathercloud no ha devuelto coordenadas válidas.")
+                    val end = java.time.LocalDate.now(java.time.ZoneOffset.UTC).minusDays(1)
+                    val start = end.minusDays(29)
+                    val archiveUrl = "https://historical-forecast-api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&start_date=$start&end_date=$end&hourly=temperature_2m,wind_speed_10m,wind_gusts_10m,precipitation,precipitation_probability&timezone=auto"
+                    val archive = JSONObject(httpGet(archiveUrl))
+                    val hourly = archive.optJSONObject("hourly") ?: throw IllegalStateException("Open-Meteo no devolvió el archivo horario.")
+                    val timeArray = hourly.optJSONArray("time") ?: throw IllegalStateException("El archivo de Open-Meteo no contiene horas.")
+                    val archiveTimes = (0 until timeArray.length()).map { idx ->
+                        runCatching { java.time.LocalDateTime.parse(timeArray.getString(idx)).toEpochSecond(java.time.ZoneOffset.UTC) }.getOrDefault(0L)
+                    }
+                    val configs = listOf(
+                        Triple("temp", "Temperatura", "°C"),
+                        Triple("wspd", "Velocidad del viento", "km/h"),
+                        Triple("gust", "Rachas de viento", "km/h"),
+                        Triple("rain", "Precipitación acumulada", "mm"),
+                        Triple("rainrate", "Intensidad de lluvia", "mm/h")
+                    )
+                    val metrics = configs.map { (key, label, unit) ->
+                        val historyJson = JSONObject(httpGet(base + "/api/history?station_id=" + enc(station.id) + "&variable=" + key + "&period=month"))
+                        val points = historyJson.optJSONArray("points") ?: JSONArray()
+                        val forecastKey = when (key) { "temp" -> "temperature_2m"; "wspd" -> "wind_speed_10m"; "gust" -> "wind_gusts_10m"; else -> "precipitation" }
+                        val forecastValues = hourly.optJSONArray(forecastKey)
+                        val pairs = mutableListOf<Pair<Double, Double>>()
+                        for (idx in 0 until points.length()) {
+                            val point = points.optJSONObject(idx) ?: continue
+                            val time = point.optDouble("time", Double.NaN)
+                            val value = point.optDouble("value", Double.NaN)
+                            if (!time.isFinite() || !value.isFinite()) continue
+                            var nearest = -1
+                            var delta = Long.MAX_VALUE
+                            for (j in archiveTimes.indices) {
+                                val diff = kotlin.math.abs(archiveTimes[j] - time.toLong())
+                                if (diff < delta) { delta = diff; nearest = j }
+                                if (archiveTimes[j] > time.toLong() + 3600) break
+                            }
+                            if (nearest < 0 || delta > 1800 || forecastValues == null) continue
+                            val predicted = forecastValues.optDouble(nearest, Double.NaN)
+                            if (!predicted.isFinite()) continue
+                            val observed = if (key == "wspd" || key == "gust") value * 3.6 else value
+                            pairs.add(observed to predicted)
+                        }
+                        val tolerance = when (key) { "temp" -> 2.0; "wspd" -> 10.0; "gust" -> 15.0; else -> 1.0 }
+                        val score = if (pairs.isEmpty()) null else 100.0 * pairs.count { kotlin.math.abs(it.first - it.second) <= tolerance } / pairs.size
+                        val mae = if (pairs.isEmpty()) null else pairs.sumOf { kotlin.math.abs(it.first - it.second) } / pairs.size
+                        ValidationMetric(label, score, mae, pairs.size, unit)
+                    }
+                    val available = metrics.filter { it.score != null }
+                    StationValidationResult(station, location.optString("name", station.name), if (available.isEmpty()) null else available.mapNotNull { it.score }.average(), available.size, metrics)
+                }
+                validationResult = result
+                validationMessage = if (result.coverage == 0) "No hay suficientes observaciones coincidentes para calcular un porcentaje fiable." else "Comparación terminada · ${result.place} · ${result.coverage} variables evaluables."
+            } catch (e: Exception) {
+                validationMessage = "No se pudo completar la comparación: " + (e.message ?: "comprueba el Worker y los datos históricos.")
+            }
             loading = false
         }
     }
