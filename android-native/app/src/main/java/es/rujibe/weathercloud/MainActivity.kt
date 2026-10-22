@@ -698,11 +698,23 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                         FilterChip(selected = historyPeriod == key, onClick = { historyPeriod = key; refreshHistory() }, label = { Text(label) })
                                     }
                                 }
+                                val unitOptions = when (historyVariable) { "temp" -> listOf("auto" to "°C", "°F" to "°F"); "wspd", "gust" -> listOf("auto" to "km/h", "m/s" to "m/s", "mph" to "mph", "kn" to "nudos"); "rain" -> listOf("auto" to "mm", "in" to "in"); else -> listOf("auto" to when (historyVariable) { "hum" -> "%"; "bar" -> "hPa"; else -> "" }) }
+                                var unitMenuExpanded by remember { mutableStateOf(false) }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("Unidad del gráfico", color = muted, fontSize = 12.sp)
+                                    Box {
+                                        TextButton(onClick = { unitMenuExpanded = true }) { Text(unitOptions.firstOrNull { it.first == historyUnitChoice }?.second ?: unitOptions.first().second, color = accentColor) }
+                                        DropdownMenu(expanded = unitMenuExpanded, onDismissRequest = { unitMenuExpanded = false }) { unitOptions.forEach { option -> DropdownMenuItem(text = { Text(option.second) }, onClick = { historyUnitChoice = option.first; prefs.edit().putString("historyUnitChoice", historyUnitChoice).apply(); unitMenuExpanded = false }) } }
+                                    }
+                                }
                                 if (history.isNotEmpty()) {
-                                    val values = history.map { it.second }
+                                    val unitFactor = when (historyUnitChoice) { "°F" -> 9.0 / 5.0; "m/s" -> 1.0 / 3.6; "mph" -> 1.0 / 1.609344; "kn" -> 1.0 / 1.852; "in" -> 1.0 / 25.4; else -> 1.0 }
+                                    val unitOffset = if (historyUnitChoice == "°F") 32.0 else 0.0
+                                    val chartHistory = history.map { it.first to (it.second * unitFactor + unitOffset) }
+                                    val values = chartHistory.map { it.second }
                                     val minValue = values.minOrNull() ?: 0.0
                                     val maxValue = values.maxOrNull() ?: 1.0
-                                    val historyUnit = when (historyVariable) { "temp" -> "°C"; "hum" -> "%"; "bar" -> "hPa"; "wspd", "gust" -> "km/h"; "rain" -> "mm"; else -> "" }
+                                    val historyUnit = when (historyVariable) { "temp" -> if (historyUnitChoice == "°F") "°F" else "°C"; "hum" -> "%"; "bar" -> "hPa"; "wspd", "gust" -> when (historyUnitChoice) { "m/s" -> "m/s"; "mph" -> "mph"; "kn" -> "nudos"; else -> "km/h" }; "rain" -> if (historyUnitChoice == "in") "in" else "mm"; else -> "" }
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         listOf("Mín." to minValue, "Media" to values.average(), "Máx." to maxValue).forEach { pair ->
                                             Surface(color = bg, shape = RoundedCornerShape(12.dp), modifier = Modifier.weight(1f)) {
@@ -721,9 +733,9 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                         Text(String.format(Locale.getDefault(), "%.1f", chartMax), color = muted, fontSize = 10.sp)
                                         Text(String.format(Locale.getDefault(), "%.1f %s", chartMin, historyUnit), color = muted, fontSize = 10.sp)
                                     }
-                                    Canvas(Modifier.fillMaxWidth().height(190.dp).pointerInput(history) {
+                                    Canvas(Modifier.fillMaxWidth().height(210.dp).pointerInput(chartHistory) {
                                         detectTapGestures { offset ->
-                                            if (history.isNotEmpty()) selectedHistoryIndex = if (history.size == 1) 0 else ((offset.x / size.width) * history.size).toInt().coerceIn(0, history.lastIndex)
+                                            if (chartHistory.isNotEmpty()) selectedHistoryIndex = if (chartHistory.size == 1) 0 else ((offset.x / size.width) * chartHistory.size).toInt().coerceIn(0, chartHistory.lastIndex)
                                         }
                                     }) {
                                         val leftPad = 4f
