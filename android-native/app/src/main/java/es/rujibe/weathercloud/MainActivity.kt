@@ -117,6 +117,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     var forecastSearch by remember { mutableStateOf("") }
     var forecastPlaceName by remember { mutableStateOf(prefs.getString("forecastPlaceName", "Madrid, España") ?: "Madrid, España") }
     var history by remember { mutableStateOf<List<Pair<String, Double>>>(emptyList()) }
+    var historyRainRate by remember { mutableStateOf<List<Pair<String, Double>>>(emptyList()) }
     var todayTemperatureValues by remember { mutableStateOf<List<Double>>(emptyList()) }
     var selectedHistoryIndex by remember { mutableIntStateOf(-1) }
     var historyVariable by remember { mutableStateOf("temp") }
@@ -626,6 +627,21 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     val v = p.optDouble("value", Double.NaN)
                     if (v.isNaN()) null else (p.optLong("time").toString() to v)
                 }
+                val rateJson = withContext(Dispatchers.IO) {
+                    if (base.isNotBlank()) JSONObject(httpGet("$base/api/history?station_id=${enc(station.id)}&variable=rainrate&period=${enc(if (historyPeriod == "yesterday") "week" else historyPeriod)}"))
+                    else JSONObject(httpGet("https://rujibe.github.io/weathercloud-pwa/history.json")).optJSONObject("stations")?.optJSONObject(station.id)?.optJSONObject("series") ?: JSONObject()
+                }
+                val rateArray = rateJson.optJSONArray("points") ?: rateJson.optJSONArray("rainrate") ?: JSONArray()
+                val ratePoints = (0 until rateArray.length()).mapNotNull { i ->
+                    val p = rateArray.optJSONObject(i) ?: return@mapNotNull null
+                    val v = p.optDouble("value", Double.NaN)
+                    if (v.isNaN()) null else (p.optLong("time").toString() to v)
+                }
+                historyRainRate = when (historyPeriod) {
+                    "day" -> { val zone = java.time.ZoneId.systemDefault(); val start = java.time.LocalDate.now(zone).atStartOfDay(zone).toEpochSecond(); val end = java.time.LocalDate.now(zone).plusDays(1).atStartOfDay(zone).toEpochSecond(); ratePoints.filter { it.first.toLongOrNull()?.let { t -> t >= start && t < end } == true } }
+                    "yesterday" -> { val zone = java.time.ZoneId.systemDefault(); val start = java.time.LocalDate.now(zone).minusDays(1).atStartOfDay(zone).toEpochSecond(); val end = java.time.LocalDate.now(zone).atStartOfDay(zone).toEpochSecond(); ratePoints.filter { it.first.toLongOrNull()?.let { t -> t >= start && t < end } == true } }
+                    else -> ratePoints
+                }.takeLast(500)
                 val now = System.currentTimeMillis() / 1000
                 history = when (historyPeriod) {
                     "day" -> {
@@ -928,6 +944,22 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                         }
                                     }
                                     if (historyVariable == "rain") {
+                                        if (historyRainRate.isNotEmpty()) {
+                                            val peakRate = historyRainRate.maxByOrNull { it.second }
+                                            Surface(color = if (light) Color(0xFFFFF1E5) else Color(0xFF2B211B), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                                                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                    Text("Intensidad de lluvia · mm/h", color = muted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                                    Text("Máxima registrada: ${String.format(Locale.getDefault(), "%.1f", peakRate?.second ?: 0.0)} mm/h", color = fg, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                                    Row(Modifier.fillMaxWidth().height(54.dp), horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.Bottom) {
+                                                        val rateMax = historyRainRate.maxOfOrNull { it.second }?.coerceAtLeast(0.1) ?: 0.1
+                                                        historyRainRate.takeLast(60).forEach { point ->
+                                                            Box(Modifier.weight(1f).fillMaxHeight((point.second / rateMax).toFloat().coerceIn(0.03f, 1f)).clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)).background(Color(0xFFFFA45B)))
+                                                        }
+                                                    }
+                                                    Text(peakRate?.first?.toLongOrNull()?.let { java.time.Instant.ofEpochSecond(it).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("dd/MM HH:mm")) }?.let { "Pico: $it" } ?: "Sin hora disponible", color = muted, fontSize = 11.sp)
+                                                }
+                                            }
+                                        } else Text("No hay datos de intensidad (mm/h) disponibles para este periodo.", color = muted, fontSize = 12.sp)
                                         val rainTotalMm = history.sumOf { it.second.coerceAtLeast(0.0) }
                                         val rainTotal = rainTotalMm * if (historyUnitChoice == "in") (1.0 / 25.4) else 1.0
                                         Surface(color = if (light) Color(0xFFEAF4FD) else Color(0xFF0B1C2D), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
