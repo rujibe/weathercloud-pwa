@@ -510,7 +510,22 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                         }
                     }
                     items(forecast) { day ->
-                        Surface(color = card, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) { Text(day, Modifier.padding(16.dp), color = fg, fontSize = (14 * scale).sp) }
+                        Surface(color = card, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (light) Color(0xFFDCE5EF) else Color(0xFF263A52), RoundedCornerShape(18.dp))) {
+                            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                                Column(Modifier.width(74.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text(day.date.takeLast(5), color = muted, fontSize = 11.sp)
+                                    Text(weatherEmoji(day.code), fontSize = 27.sp)
+                                }
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                                    Text(weatherText(day.code), color = fg, fontWeight = FontWeight.SemiBold, fontSize = (14 * scale).sp)
+                                    Text("Lluvia " + day.rainChance + "% · " + String.format(Locale.getDefault(), "%.1f", day.rainMm) + " mm", color = muted, fontSize = 12.sp)
+                                }
+                                Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text(day.maximum.toString() + "°", color = fg, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                                    Text(day.minimum.toString() + "°", color = muted, fontSize = 15.sp)
+                                }
+                            }
+                        }
                     }
                     if (hourlyForecast.isNotEmpty()) {
                         item { Text("Próximas horas · $forecastPlaceName", color = fg, fontWeight = FontWeight.Bold, fontSize = 18.sp) }
@@ -739,6 +754,11 @@ private fun httpGet(url: String): String {
         if (code !in 200..299) throw IllegalStateException("HTTP $code: $body")
         body
     } finally { connection.disconnect() }
+}
+private fun weatherEmoji(code: Int): String = when (code) {
+    0 -> "☀️"; 1 -> "🌤️"; 2 -> "⛅"; 3 -> "☁️"; 45, 48 -> "🌫️"
+    51, 53, 55, 56, 57 -> "🌦️"; 61, 63, 65, 66, 67, 80, 81, 82 -> "🌧️"
+    71, 73, 75, 77, 85, 86 -> "❄️"; 95, 96, 99 -> "⛈️"; else -> "🌡️"
 }
 private fun weatherText(code: Int): String = when (code) {
     0 -> "Despejado"; 1 -> "Mayormente despejado"; 2 -> "Parcialmente nuboso"; 3 -> "Nublado"
