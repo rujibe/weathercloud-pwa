@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Brush
@@ -30,6 +31,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
+import androidx.compose.ui.window.Dialog
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -73,7 +75,7 @@ data class ValidationMetric(val label: String, val score: Double?, val mae: Doub
 data class StationValidationResult(val station: Station, val place: String, val overall: Double?, val coverage: Int, val metrics: List<ValidationMetric>, val error: String = "")
 data class NearbyStation(val name: String, val id: String, val city: String, val distanceKm: Double, val updateMinutes: Int?)
 data class ForecastDay(val date: String, val code: Int, val minimum: Int, val maximum: Int, val rainChance: Int, val rainMm: Double)
-data class ForecastHour(val time: String, val code: Int, val temperature: Double, val rainChance: Int, val rainMm: Double, val wind: Double, val gust: Double)
+data class ForecastHour(val time: String, val code: Int, val temperature: Double, val rainChance: Int, val rainMm: Double, val wind: Double, val gust: Double, val date: String = "")
 data class ForecastPlace(val name: String, val latitude: Double, val longitude: Double, val admin: String, val country: String)
 
 @Composable
@@ -101,6 +103,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     var forecastSearchResults by remember { mutableStateOf<List<ForecastPlace>>(emptyList()) }
     var forecastNow by remember { mutableStateOf<ForecastHour?>(null) }
     var showAllForecastHours by remember { mutableStateOf(false) }
+    var selectedForecastDay by remember { mutableStateOf<String?>(null) }
     var forecastSearch by remember { mutableStateOf("") }
     var forecastPlaceName by remember { mutableStateOf(prefs.getString("forecastPlaceName", "Madrid, España") ?: "Madrid, España") }
     var history by remember { mutableStateOf<List<Pair<String, Double>>>(emptyList()) }
@@ -202,8 +205,8 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                 val currentHour = currentTime.withMinute(0).withSecond(0).withNano(0)
                 hourlyForecast = (0 until times.length()).filter { i ->
                     runCatching { !java.time.LocalDateTime.parse(times.optString(i)).isBefore(currentHour) }.getOrDefault(false)
-                }.take(48).map { i ->
-                    ForecastHour(times.optString(i).substringAfter('T'), codes.optInt(i), temps.optDouble(i), probs.optInt(i), rains.optDouble(i), winds.optDouble(i), gusts.optDouble(i))
+                }.map { i ->
+                    ForecastHour(times.optString(i).substringAfter('T'), codes.optInt(i), temps.optDouble(i), probs.optInt(i), rains.optDouble(i), winds.optDouble(i), gusts.optDouble(i), times.optString(i).substringBefore('T'))
                 }
                 showAllForecastHours = false
                 val cur = data.optJSONObject("current")
