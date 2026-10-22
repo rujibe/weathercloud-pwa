@@ -292,7 +292,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                     if (!lat.isFinite() || !lon.isFinite()) throw IllegalStateException("Weathercloud no ha devuelto coordenadas válidas.")
                     val end = java.time.LocalDate.now(java.time.ZoneOffset.UTC).minusDays(1)
                     val start = end.minusDays(29)
-                    val archiveUrl = "https://historical-forecast-api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&start_date=$start&end_date=$end&hourly=temperature_2m,wind_speed_10m,wind_gusts_10m,precipitation,precipitation_probability&timezone=auto"
+                    val archiveUrl = "https://historical-forecast-api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&start_date=$start&end_date=$end&timezone=UTC&temperature_unit=celsius&precipitation_unit=mm&wind_speed_unit=kmh&hourly=temperature_2m,precipitation_probability,precipitation,wind_speed_10m,wind_gusts_10m"
                     val archive = JSONObject(httpGet(archiveUrl))
                     val hourly = archive.optJSONObject("hourly") ?: throw IllegalStateException("Open-Meteo no devolvió el archivo horario.")
                     val timeArray = hourly.optJSONArray("time") ?: throw IllegalStateException("El archivo de Open-Meteo no contiene horas.")
