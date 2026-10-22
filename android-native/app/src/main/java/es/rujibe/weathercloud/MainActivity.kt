@@ -67,6 +67,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     var selectedId by remember { mutableStateOf(prefs.getString("selectedId", stations.firstOrNull()?.id ?: "3102580268") ?: "3102580268") }
     var showSettings by remember { mutableStateOf(false) }
     var showStations by remember { mutableStateOf(false) }
+    var stationMenuExpanded by remember { mutableStateOf(false) }
     var newName by remember { mutableStateOf("") }
     var newId by remember { mutableStateOf("") }
     var readings by remember { mutableStateOf<List<Reading>>(emptyList()) }
@@ -241,7 +242,22 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                                     Text(if (readings.isNotEmpty()) "ESTACIÓN CONECTADA" else "PANEL METEOROLÓGICO", color = if (light) Color(0xFF315D7B) else Color(0xFFB9F6DC), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.1.sp)
                                 }
                                 Spacer(Modifier.height(14.dp))
-                                Text(stations.firstOrNull { it.id == selectedId }?.name ?: "Mi estación", color = if (light) Color(0xFF14243A) else TextMain, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                                Box {
+                                    TextButton(onClick = { stationMenuExpanded = true }, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)) {
+                                        Text("▾  " + (stations.firstOrNull { it.id == selectedId }?.name ?: "Mi estación"), color = if (light) Color(0xFF14243A) else TextMain, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                                    }
+                                    DropdownMenu(expanded = stationMenuExpanded, onDismissRequest = { stationMenuExpanded = false }) {
+                                        stations.forEach { station ->
+                                            DropdownMenuItem(text = { Text(station.name) }, onClick = {
+                                                selectedId = station.id
+                                                persistStations()
+                                                stationMenuExpanded = false
+                                                refreshCurrent()
+                                            })
+                                        }
+                                        DropdownMenuItem(text = { Text("Gestionar mis estaciones") }, onClick = { stationMenuExpanded = false; showStations = true })
+                                    }
+                                }
                                 val temp = readings.firstOrNull { it.key == "temp" }
                                 Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Text(if (temp != null) temp.value else "—", color = if (light) Color(0xFF14243A) else TextMain, fontSize = (58 * scale).sp, fontWeight = FontWeight.Bold, letterSpacing = (-2).sp)
