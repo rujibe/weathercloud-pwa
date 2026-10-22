@@ -64,6 +64,7 @@ data class Station(val name: String, val id: String)
 data class Reading(val key: String, val label: String, val value: String, val unit: String, val icon: String)
 data class StationAnalysis(val station: Station, val value: Double?, val unit: String, val label: String, val error: String = "")
 data class NearbyStation(val name: String, val id: String, val city: String, val distanceKm: Double, val updateMinutes: Int?)
+data class ForecastDay(val date: String, val code: Int, val minimum: Int, val maximum: Int, val rainChance: Int, val rainMm: Double)
 
 @Composable
 fun WeathercloudApp(prefs: android.content.SharedPreferences) {
@@ -85,7 +86,7 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
     var newName by remember { mutableStateOf("") }
     var newId by remember { mutableStateOf("") }
     var readings by remember { mutableStateOf<List<Reading>>(emptyList()) }
-    var forecast by remember { mutableStateOf<List<String>>(emptyList()) }
+    var forecast by remember { mutableStateOf<List<ForecastDay>>(emptyList()) }
     var hourlyForecast by remember { mutableStateOf<List<String>>(emptyList()) }
     var forecastSearch by remember { mutableStateOf("") }
     var forecastPlaceName by remember { mutableStateOf(prefs.getString("forecastPlaceName", "Madrid, España") ?: "Madrid, España") }
@@ -162,8 +163,14 @@ fun WeathercloudApp(prefs: android.content.SharedPreferences) {
                 }
                 val d = data.getJSONObject("daily")
                 forecast = (0 until d.getJSONArray("time").length()).map { i ->
-                    val day = d.getJSONArray("time").getString(i)
-                    "$day · ${weatherText(d.getJSONArray("weather_code").optInt(i))} · ${d.getJSONArray("temperature_2m_min").optDouble(i).toInt()}° / ${d.getJSONArray("temperature_2m_max").optDouble(i).toInt()}° · lluvia ${d.getJSONArray("precipitation_probability_max").optInt(i)}% · ${d.getJSONArray("precipitation_sum").optDouble(i)} mm"
+                    ForecastDay(
+                        date = d.getJSONArray("time").getString(i),
+                        code = d.getJSONArray("weather_code").optInt(i),
+                        minimum = d.getJSONArray("temperature_2m_min").optDouble(i).toInt(),
+                        maximum = d.getJSONArray("temperature_2m_max").optDouble(i).toInt(),
+                        rainChance = d.getJSONArray("precipitation_probability_max").optInt(i),
+                        rainMm = d.getJSONArray("precipitation_sum").optDouble(i)
+                    )
                 }
                 val h = data.getJSONObject("hourly")
                 val times = h.getJSONArray("time")
